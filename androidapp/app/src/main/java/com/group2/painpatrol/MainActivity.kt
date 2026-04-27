@@ -15,15 +15,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.group2.painpatrol.ui.theme.PainpatrolTheme
-import com.group2.painpatrol.ui.AppScreen
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
+import com.group2.painpatrol.data.MQTTSubscriber
+import com.group2.painpatrol.ui.HomeScreen
+import com.group2.painpatrol.ui.StatisticScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        MQTTSubscriber.connect()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -74,17 +77,4 @@ fun PainPatrolApp() {
             AppDestinations.STATS -> StatisticScreen(modifier = Modifier.padding(innerPadding))
         }
     }
-}
-
-// Home screen with the sensor data
-@Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
-    Text(text = "Placeholder", modifier = modifier)
-}
-
-
-// Screen of the Statistics, graphs etc will go here
-@Composable
-fun StatisticScreen(modifier: Modifier = Modifier) {
-    Text(text = "Another placeholder", modifier = modifier)
 }

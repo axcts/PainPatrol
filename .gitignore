@@ -31,3 +31,6 @@ google-services.json
 
 # no Mac
 .DS_Store
+
+# intellij
+.idea
