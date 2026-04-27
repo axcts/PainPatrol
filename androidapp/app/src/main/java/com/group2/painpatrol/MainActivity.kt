@@ -20,8 +20,24 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PainpatrolTheme {
-
+                PainPatrolApp()
             }
         }
     }
+}
+
+
+enum class AppDestinations(
+    val label: String,
+    val icon: Int
+) {
+    HOME("Home", R.drawable.ic_home),
+    STATS("Statistics",R.drawable.ic_stats)
+}
+
+
+@Preview(showSystemUi = true)
+@Composable
+fun PainPatrolApp() {
+
 }
