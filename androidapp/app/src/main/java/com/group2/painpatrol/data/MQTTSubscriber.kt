@@ -1,7 +1,10 @@
 package com.group2.painpatrol.data
 
+import android.util.Log
 import com.group2.painpatrol.ui.AppViewModel
 import com.hivemq.client.mqtt.MqttClient
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 internal object MQTTSubscriber {
     private val identifier: String = "pain-patrol"
@@ -19,14 +22,29 @@ internal object MQTTSubscriber {
     fun connect() {
         client.connect().whenComplete { connAck, throwable ->
             if (throwable != null) {
-                println("MQTT failed to connect")
+                Log.e("MQTT", throwable.toString())
+                Log.e("MQTT", "MQTT failed to connect")
             } else {
                 client.subscribeWith()
                     .topicFilter("painpatrol/readings")
                     .callback {
                         publish ->
                             payload = (publish.payloadAsBytes).toString(Charsets.UTF_8)
-                            AppViewModel.processReading(payload ?: "N/A")
+                            val mappedPayload = Json.parseToJsonElement(payload ?: "{}")
+
+                            if ( !mappedPayload.jsonObject.isEmpty() ) {
+
+                                val readings = mappedPayload.jsonObject["readings"] ?:
+                                    Json.parseToJsonElement("{}")
+
+                                if ( !readings.jsonObject.isEmpty()) {
+                                    AppViewModel.processReadings(readings
+                                                                            .jsonObject.toMap())
+
+                                    // TODO: possibly save payload json to local storage
+                                    // saving would be delegated to a diff class
+                                }
+                            }
                     }
                     .send()
             }

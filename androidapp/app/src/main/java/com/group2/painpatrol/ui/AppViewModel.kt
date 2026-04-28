@@ -4,21 +4,21 @@ import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.JsonElement
 
 object AppViewModel: ViewModel() {
     private val uiStateFlow = MutableStateFlow(UiState())
     val uiState = uiStateFlow.asStateFlow()
 
-    internal fun processReading(payload: String) {
-        if (payload != "N/A") {
-            updateAppState(payload)
-        }
+    internal fun processReadings(readings: Map<String, JsonElement>) {
+        val stringifiedReadings: Map<String, String> = readings.mapValues { it.value.toString() }
+        updateAppState(stringifiedReadings)
     }
 
-    private fun updateAppState(payload: String) {
+    private fun updateAppState(payload: Map<String, String>) {
         uiStateFlow.update { currentState ->
             currentState.copy(
-                tempPayload = payload
+                readings = payload
             )
         }
     }

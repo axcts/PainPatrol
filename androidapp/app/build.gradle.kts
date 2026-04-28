@@ -46,6 +46,7 @@ android {
 
 dependencies {
     implementation("com.hivemq:hivemq-mqtt-client:1.3.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
@@ -53,6 +54,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.compose.foundation.layout)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")

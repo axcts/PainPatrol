@@ -1,3 +1,3 @@
 package com.group2.painpatrol.ui
 
-data class UiState(val tempPayload: String = "Fetching...")
+data class UiState(val readings: Map<String, String> = mapOf())

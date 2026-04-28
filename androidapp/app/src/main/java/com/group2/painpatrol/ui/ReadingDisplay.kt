@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.sp
 
 // Boxes with sensor readings
 @Composable
-fun ReadingDisplay(label: String, modifier: Modifier = Modifier, /*bgColor: Color*/) {
+fun ReadingDisplay(label: String, value: String, modifier: Modifier = Modifier, /*bgColor: Color*/) {
     Box(
         contentAlignment = Alignment.Center,
         modifier =
@@ -33,8 +33,8 @@ fun ReadingDisplay(label: String, modifier: Modifier = Modifier, /*bgColor: Colo
     {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             Text(text = label, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
-            val uiState by AppViewModel.uiState.collectAsState()    // Sensor readings from broker
-            Text(text = uiState.tempPayload, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
+            Text(text = value, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
+
 
         }
 
