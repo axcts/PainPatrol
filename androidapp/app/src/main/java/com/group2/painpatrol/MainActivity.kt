@@ -1,9 +1,12 @@
+@file:OptIn(ExperimentalGridApi::class) // not sure whether placeholder or not, but without this it likes to throw an error
+
 package com.group2.painpatrol
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
