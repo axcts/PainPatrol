@@ -123,6 +123,7 @@ int getAvailableWiFi(int wifiAmount, int unique[]) {
   return counter;
 }
 
+
 // function for reading 5 way switch as per lvgl docs template for any input device
 void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
   data->key = 0; // assign nonexistent key
@@ -163,6 +164,12 @@ void setupSwitch(lv_indev_t *wioSwitch) {
   lv_indev_set_read_cb(wioSwitch, readSwitch); // set the input reading function
 }
 
+void displayText(char text[]) {
+  tft.fillScreen(TFT_BLACK);
+  tft.setTextSize(1);
+  tft.drawString(text, LV_HOR_RES_MAX / 4 + 9, LV_VER_RES_MAX / 2 - 10);
+}
+
 
 void setup() {
   Serial.begin(115200); // begin terminal
@@ -174,6 +181,7 @@ void setup() {
   lv_tick_set_cb(tick); // set tick func
 
   createDisplay();
+  displayText("Scanning for networks..."); // loading screen text :3
 
   lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
   setupSwitch(wioSwitch); // set it Up!
