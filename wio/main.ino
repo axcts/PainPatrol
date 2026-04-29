@@ -24,15 +24,21 @@ static void wifiEventHandler(lv_event_t *e) {
   }
 }
 
-// dummy function
+// connect to wifi function
 void connectToWifi(const char name[], const char password[]) {
   if (password == "") {
-    Serial.print(name);
+
+    while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    WiFi.begin(name);
+    }
+
   } else {
-    Serial.print(name);
-    Serial.print(" ");
-    Serial.print(password);
-  }
+      while (WiFi.status() != WL_CONNECTED) {
+      delay(500);
+      WiFi.begin(name, password);
+      }
+    }
 }
 
 
