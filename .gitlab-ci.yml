@@ -10,7 +10,7 @@ wio-job:
   script:
     - export PATH=$PATH:/root/bin
     - pwd
-    - cd arduino_src
+    - cd wio
     - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal # compile project w/ wio terminal using arduino
     - chmod +x setup-build-env.sh # enable execution of setup shell file
     - ./setup-build-env.sh
