@@ -10,7 +10,7 @@ cd ~
 apt-get install curl -y
 curl -fsSL https://raw.githubusercontent.com/arduino/arduino-cli/master/install.sh | sh # Download and execute Arduino CLI install script from official GitHub
 export PATH=$PATH:/root/bin
-arduino-cli -version
+arduino-cli version
 
 # Add Seeed Studio boards to Arduino CLI (creates a config file)
 echo "board_manager:
