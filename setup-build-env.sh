@@ -2,9 +2,8 @@
 
 set -e # in case of error, exit pipeline
 
-# Update apt and upgrade otherwise not compatible w/ OS error from seeduino sAMD
+# Update apt
 apt-get update
-apt-get upgrade
 cd ~
 
 # Install arduino-cli
@@ -20,7 +19,7 @@ echo "board_manager:
 
 # update index to work w/ board manager and Seeduino SAMD microchip dependencies, add into config
 arduino-cli core update-index --config-file .arduino-cli.yaml
-arduino-cli core install Seeeduino:samd --config-file .arduino-cli.yaml
+arduino-cli core install Seeeduino:samd --config-file .arduino-cli.yaml --verbose
 
 # should be fine without versioning, installs latest version, if this causes major issues, apply versions manually
 arduino-cli lib install "lvgl"
