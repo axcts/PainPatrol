@@ -19,10 +19,10 @@ wio-job:
 android-job:
   stage: build
   image: jangrewe/gitlab-ci-android
-  cache:
-    key: ${CI_PROJECT_ID}
+  cache: # cache since builds are looooong w/ CI
+    key: ${CI_COMMIT_REF_SLUG}
     paths:
-    - .gradle/
+    - .androidapp/gradle/
   before_script:
     - export GRADLE_USER_HOME=$(pwd)/.gradle
   tags:
