@@ -1,4 +1,6 @@
-image: ubuntu:latest
+image:
+  name: ubuntu:latest
+  platform: linux/amd64
 
 stages:
   - build # only one stage for now and that is building wio and android app
