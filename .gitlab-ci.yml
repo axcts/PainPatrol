@@ -10,14 +10,15 @@ wio-job:
   script:
     - export PATH=$PATH:/root/bin
     - pwd
-    - cd wio
-    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal # compile project w/ wio terminal using arduino
     - chmod +x setup-build-env.sh # enable execution of setup shell file
     - ./setup-build-env.sh
+    - cd wio
+    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal # compile project w/ wio terminal using arduino
     - rm -rf lvgl/src/draw/sw/blend/helium # get rid of helium
 
 android-job:
   stage: build
+  image: gradle:latest # override to gradle so that JDK is imported
   tags:
     - docker
   script:
