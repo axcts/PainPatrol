@@ -130,16 +130,12 @@ int connectToWifi(const char name[], const char password[]) {
   while (WiFi.status() != WL_CONNECTED && startTime - previousTime <= period ) {
     if (password == "") {
       WiFi.begin(name);
-      Serial.print(millis());
     }
     else {
       WiFi.begin(name, password);
-      Serial.print(millis());
     }
 
     startTime = millis();
-    Serial.print("ddddddd");
-    Serial.print(startTime - previousTime);
   }
 
   if (startTime - previousTime >= period) {
@@ -272,7 +268,6 @@ void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
 
   } else if (digitalRead(WIO_5S_PRESS) == LOW) {
     data->key = LV_KEY_ENTER;
-    Serial.print("pressed");
 
   } else { // if it doesn't read anything from the 5 way switch make the key state released
     data->state = LV_INDEV_STATE_RELEASED;
