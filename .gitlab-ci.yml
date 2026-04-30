@@ -1,6 +1,5 @@
 image: ubuntu:latest
 
-
 stages:
   - build # only one stage for now and that is building wio and android app
 
