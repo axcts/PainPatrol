@@ -1,21 +1,25 @@
 image: ubuntu:latest
 
 stages:
-  - build
+  - build # only one stage for now and that is building wio and android app
 
 wio-job:
   stage: build
+  tags:
+    - docker # the runner used is docker
   script:
     - export PATH=$PATH:/root/bin
     - pwd
     - cd arduino_src
-    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal
-    - chmod +x setup-build-env.sh
+    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal # compile project w/ wio terminal using arduino
+    - chmod +x setup-build-env.sh # enable execution of setup shell file
     - ./setup-build-env.sh
-    - rm -rf lvgl/src/draw/sw/blend/helium
+    - rm -rf lvgl/src/draw/sw/blend/helium # get rid of helium
 
 android-job:
   stage: build
+  tags:
+    - docker
   script:
     - cd /androidapp
     - ./gradlew build
