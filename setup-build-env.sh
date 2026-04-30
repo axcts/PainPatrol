@@ -2,8 +2,9 @@
 
 set -e # in case of error, exit pipeline
 
-# Update apt
+# Update apt and upgrade otherwise not compatible w/ OS error from seeduino sAMD
 apt-get update
+apt-get upgrade
 cd ~
 
 # Install arduino-cli
