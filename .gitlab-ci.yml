@@ -18,9 +18,12 @@ wio-job:
 
 android-job:
   stage: build
-  image: gradle:latest # override to gradle so that JDK is imported
+  image: jangrewe/gitlab-ci-android
+  before_script:
+    - export GRADLE_USER_HOME=$(pwd)/.gradle
   tags:
     - docker
   script:
     - cd androidapp
+    - chmod +x ./gradlew
     - ./gradlew build
