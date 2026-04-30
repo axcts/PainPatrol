@@ -1,16 +1,12 @@
-variables:
-  DOCKER_DEFAULT_PLATFORM: linux/amd64
-
 stages:
   - build # only one stage for now and that is building wio and android app
 
 wio-job:
   stage: build
-  image: ubuntu:latest
+  image: ubuntu:latest # docker image is ubuntu
   tags:
-    - docker # the runner used is docker
+    - docker # the runner tag used is docker
   script:
-    - uname -m # checking architecture
     - export PATH=$PATH:/root/bin
     - pwd
     - chmod +x setup-build-env.sh # enable execution of setup shell file
