@@ -14,48 +14,42 @@ static void wifiEventHandler(lv_event_t *e) {
   lv_obj_t *obj = lv_event_get_target_obj(e); // the object that triggered the event
   lv_obj_t *label = lv_obj_get_child(obj, 0); // first child of object (we know its a label i added it)
 
+  int result;
   // if the event is button clicked
   if (code == LV_EVENT_CLICKED) {
-    connectToWifi(lv_label_get_text(label), "");
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0); // set text color to white
+    lv_display_refr_timer(NULL); // without this, text color will not change to white, more below
 
+    result = connectToWifi(lv_label_get_text(label), "");
+
+    if (result == -1) {
+      lv_obj_set_style_text_color(label, lv_color_hex(0xFF0000), 0); // set text color to red
+    }
+    
   } else if (code == LV_EVENT_READY) { // if the event is text area being ready (enter on keyboard has been pressed)
-    label = lv_obj_get_child(obj, 1); // second child actually because text area first child is a label for the text you're inputting
-    connectToWifi(lv_label_get_text(label), lv_textarea_get_text(obj)); // plug into dummy function
+    lv_obj_t *label = lv_obj_get_child(obj, 1); // second child because text area first child is a label for the text being inputted, obj is the textarea object
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0); // set text color to white
+    lv_obj_set_style_border_color(obj, lv_color_hex(0x444444), 0);
+    lv_display_refr_timer(NULL); // assumption, lvgl does not refresh the above text color in this event unless it deems it as an invalid area (which it does not)
+
+    result = connectToWifi(lv_label_get_text(label), lv_textarea_get_text(obj)); // plug into dummy function
+
+    if (result == -1) {
+      lv_obj_set_style_text_color(label, lv_color_hex(0xFF0000), 0); // set text color to red
+      lv_obj_set_style_border_color(obj, lv_color_hex(0xFF0000), 0);
+    }
+  }
+
+  if (result == 1) {
+    displayRegularValues();
   }
 }
 
-// connect to wifi function
-void connectToWifi(const char name[], const char password[]) {
-  if (password == "") {
-
-    while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    WiFi.begin(name);
-    }
-
-  } else {
-      while (WiFi.status() != WL_CONNECTED) {
-      delay(500);
-      WiFi.begin(name, password);
-      }
-    }
+void displayRegularValues() {
+    lv_obj_t *valuesScreen = lv_obj_create(NULL);
+    lv_screen_load(valuesScreen);
+    lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 }
-
-
-// display flushing function (= lvgl makes a graphic but it needs a function to write it to the screen so this is the function)
-void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
-  uint32_t w = (area->x2 - area->x1 + 1);
-  uint32_t h = (area->y2 - area->y1 + 1);
-
-  // use tft to write [the chunk of the graphics LVGL rendered] to the screen
-  tft.startWrite();
-  tft.setAddrWindow(area->x1, area->y1, w, h);
-  tft.pushColors((uint16_t *)px_map, w * h, true);
-  tft.endWrite();
-
-  lv_display_flush_ready(disp);
-}
-
 
 void createWiFiMenu(int available, int wifi[]) {
     lv_obj_t *cont; // =container
@@ -68,6 +62,7 @@ void createWiFiMenu(int available, int wifi[]) {
     lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
 
     // make main page (list of wifis) and subpage (potential password input)
+    
     lv_obj_t *wifiPage = lv_menu_page_create(menu, NULL);
 
     // for every available wifi make a container with text that has [name of wifi] [indicator if it is locked or not]
@@ -113,6 +108,61 @@ void createWiFiMenu(int available, int wifi[]) {
     lv_menu_set_page(menu, wifiPage); // put that beautiful menu (billion containers) on the main page
 }
 
+
+void scan() {
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  delay(100);
+
+  int found = WiFi.scanNetworks();
+  int availableWiFi[found];
+  int wifiAmount = getAvailableWiFi(found, availableWiFi);
+
+  createWiFiMenu(wifiAmount, availableWiFi);
+}
+
+// connect to wifi function
+int connectToWifi(const char name[], const char password[]) {
+  unsigned long startTime = millis();
+  unsigned long previousTime = millis();
+  unsigned long period = 15000; //ms
+
+  while (WiFi.status() != WL_CONNECTED && startTime - previousTime <= period ) {
+    if (password == "") {
+      WiFi.begin(name);
+      Serial.print(millis());
+    }
+    else {
+      WiFi.begin(name, password);
+      Serial.print(millis());
+    }
+
+    startTime = millis();
+    Serial.print("ddddddd");
+    Serial.print(startTime - previousTime);
+  }
+
+  if (startTime - previousTime >= period) {
+    return -1;
+  }
+
+  return 1;
+  
+}
+
+// display flushing function (= lvgl makes a graphic but it needs a function to write it to the screen so this is the function)
+void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
+  uint32_t w = (area->x2 - area->x1 + 1);
+  uint32_t h = (area->y2 - area->y1 + 1);
+
+  // use tft to write [the chunk of the graphics LVGL rendered] to the screen
+  tft.startWrite();
+  tft.setAddrWindow(area->x1, area->y1, w, h);
+  tft.pushColors((uint16_t *)px_map, w * h, true);
+  tft.endWrite();
+
+  lv_display_flush_ready(disp);
+}
 
 void createPasswordPage(lv_obj_t *page, const char wifiName[]) {
   lv_obj_t *title = lv_label_create(page);
@@ -205,6 +255,7 @@ void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
   data->key = 0; // assign nonexistent key
   data->state = LV_INDEV_STATE_PRESSED; // so we can make it's initial state pressed so we dont have to repeatedly set the state to pressed in the first 5 cases #lazy
 
+
   // when the funct is called and the 5 way switch is activated in some way set the key to the corresponding lvgl key
   // so 5 way switch right is read as lv_key_right etc.
   if (digitalRead(WIO_5S_UP) == LOW) {
@@ -221,6 +272,7 @@ void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
 
   } else if (digitalRead(WIO_5S_PRESS) == LOW) {
     data->key = LV_KEY_ENTER;
+    Serial.print("pressed");
 
   } else { // if it doesn't read anything from the 5 way switch make the key state released
     data->state = LV_INDEV_STATE_RELEASED;
@@ -262,20 +314,12 @@ void setup() {
   lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
   setupSwitch(wioSwitch); // set it Up!
 
-  WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
-
-  int found = WiFi.scanNetworks();
-  int availableWiFi[found];
-  int wifiAmount = getAvailableWiFi(found, availableWiFi);
-
   static lv_group_t *wifiList = lv_group_create(); // create group for objects
   lv_indev_set_group(wioSwitch, wifiList); // make 5 way switch the input device for this group of objects
   lv_group_set_default(wifiList); // set it as the default group for all objects created after this point 
   // that is subject to change as we will have subpages and different input handling will be needed but it is ok for now
 
-  createWiFiMenu(wifiAmount, availableWiFi);
+  scan();
 }
 
 void loop() {
