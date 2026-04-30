@@ -1,0 +1,21 @@
+image: ubuntu:latest
+
+stages:
+  - build
+
+wio-job:
+  stage: build
+  script:
+    - export PATH=$PATH:/root/bin
+    - pwd
+    - cd arduino_src
+    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal
+    - chmod +x setup-build-env.sh
+    - ./setup-build-env.sh
+    - rm -rf lvgl/src/draw/sw/blend/helium
+
+android-job:
+  stage: build
+  script:
+    - cd /androidapp
+    - ./gradlew build
