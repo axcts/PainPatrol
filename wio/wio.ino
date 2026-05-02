@@ -1,12 +1,135 @@
 #include <lvgl.h> // graphics library
 #include <TFT_eSPI.h> // (library for LCD display)
+#include <PubSubClient.h> // mqtt
+#include "DateTime.h"
+#include "RTC_SAMD51.h" // RTC clock so that our microcontroller knows when 1970 was compared to now
 #include "rpcWiFi.h" // wifi library
 #include "conf.h" // custom constants
+#include "Grove_Temperature_And_Humidity_Sensor.h"
 
+DHT dht(DHT_PIN, DHT_TYPE);
+RTC_SAMD51 rtc; // https://wiki.seeedstudio.com/Wio-Terminal-RTC/
+
+WiFiClient wifiClient;
+PubSubClient client(wifiClient); // create wifi client for mqtt
+
+const char * mqttHost = "broker.hivemq.com";
+const int port = 1883;
+const char * readingsTopic = "painpatrol/readings"; // for publishing
+const char * clientId = "wio-terminal";
 
 TFT_eSPI tft = TFT_eSPI(); // tft instance
 static lv_color_t buf[LV_HOR_RES_MAX * 10]; // display buffer for LVGL (defining how big of a chunk of the display LVGL can work on at once)
 static uint32_t tick(void) { return millis(); } // tick func
+
+// Subscribers inside of LVGL, not MQTT!!
+lv_subject_t temperatureSubscriber;
+lv_subject_t humiditySubscriber;
+lv_subject_t soundSubscriber;
+lv_subject_t lightingSubscriber;
+
+int isConnectedToWiFi;
+int isConnectedToMQTT;
+
+static void valueChangedCallback(lv_observer_t *observer, lv_subject_t *subject) {
+    lv_obj_t *label = lv_observer_get_target_obj(observer);
+
+    float value = lv_subject_get_float(subject); // sensor's value
+
+    const char *unit = (const char *)lv_observer_get_user_data(observer); // get user data which is a void pointer (generic), convert it to a char array
+
+    lv_label_set_text_fmt(label, "%.2f %s", value, unit);
+}
+
+void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid in the lvgl docs
+    // takes up remaining area (fraction) of space remaining in the grid
+    // LV_GRID_TEMPLATE_LAST is just for checking whether it's reached the end of the row/column array
+    // you can verify this in the count_tracks function in case I am wrong
+    // have each cell take up the a quarter of the screen, so all cells take up the whole screen
+
+    static int32_t cellColumns[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+    static int32_t cellRows[] = { LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST };
+
+    lv_obj_t *grid = lv_obj_create(parent); // create grid inside of parent object (whatever that may be)
+
+    lv_obj_set_size(grid, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+    lv_obj_center(grid);
+
+    // the grid is described through the cellColumns and the cellRows
+    lv_obj_set_grid_dsc_array(grid, cellColumns, cellRows);
+
+    // styling
+    lv_obj_set_style_bg_color(grid, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_radius(grid, 0, 0);
+    lv_obj_set_style_border_color(grid, lv_color_hex(0x000000), 0);
+
+    // get rid of padding so cells can fill the entire screen
+    lv_obj_set_style_pad_left(grid, 0 , 0);
+    lv_obj_set_style_pad_right(grid, 0 , 0);
+    lv_obj_set_style_pad_top(grid, 0 , 0);
+    lv_obj_set_style_pad_bottom(grid, 0 , 0);
+
+    // so we don't make a new variable each time in the loop
+    lv_obj_t *valueLabel;
+    lv_obj_t *cellLabel;
+    lv_obj_t *cell;
+    char unit[4]; // 4 because degree symbol has interesting ascii value
+
+    const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
+    lv_subject_t *subscribers[4] = {&temperatureSubscriber, &humiditySubscriber, &lightingSubscriber, &soundSubscriber};
+    // we want to borrow the value from the subscribers, which is why we have the & symbol
+    // if we didn't do this we'd get a copy of the temperature subscriber (which then doesn't have the callback called every time, meaning we'd just
+    // have one initial reading and then nothing)
+
+    // yes it's a static value, could later make it dynamic by removing static from cellColumns and cellRows
+    // but the documentation does not seem to like that, so for now it's kept
+    for (int i = 0; i < 4; i++) {
+        // get position of cell in the grid and create the cell object
+        int column = i % 2;
+        int row = i / 2;
+
+        cell = lv_obj_create(grid);
+
+        // set the cell's position in the grid and have it stretch to fill the entire width & height of the cell
+        lv_obj_set_grid_cell(cell, LV_GRID_ALIGN_STRETCH, column, 1, LV_GRID_ALIGN_STRETCH, row, 1);
+
+        cellLabel = lv_label_create(cell);
+        valueLabel = lv_label_create(cell);
+
+        const char *unit;
+
+        if (strcmp(cellLabels[i], "Temperature") == 0) {
+          unit = "°C";
+        } 
+        else {
+          unit = "%";
+        }
+
+        // last parameter as per docs is user_data which is of type void *, void * just means that you can use any type
+        // however we then need to handle that in the callback when we use it (i.e. converting the void * to char array)
+        // basically a generic if you know abt it
+        lv_subject_add_observer_obj(subscribers[i], valueChangedCallback, valueLabel, (void *) unit);
+
+        lv_label_set_text_fmt(cellLabel, "%s", cellLabels[i]);
+
+        lv_obj_align(cellLabel, LV_ALIGN_TOP_MID, 0, 0); // align cell label to top mid without an offset
+        lv_obj_center(valueLabel);
+
+    }
+
+    // reduce gap between cells
+    lv_obj_set_style_pad_row(grid, 4, 0);
+    lv_obj_set_style_pad_column(grid, 4, 0);
+}
+
+void displayRegularValues() {
+    // create an empty screen to then switch to and set its size
+    lv_obj_t *valuesScreen = lv_obj_create(NULL);
+    lv_screen_load(valuesScreen);
+    lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+
+    display2x2Grid(valuesScreen);
+}
 
 // handling the wifi events (click unlocked wifi button or press enter key when done typing password)
 static void wifiEventHandler(lv_event_t *e) {
@@ -41,14 +164,9 @@ static void wifiEventHandler(lv_event_t *e) {
   }
 
   if (result == 1) {
+    connectToMQTT();
     displayRegularValues();
   }
-}
-
-void displayRegularValues() {
-    lv_obj_t *valuesScreen = lv_obj_create(NULL);
-    lv_screen_load(valuesScreen);
-    lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 }
 
 void createWiFiMenu(int available, int wifi[]) {
@@ -142,8 +260,28 @@ int connectToWifi(const char name[], const char password[]) {
     return -1;
   }
 
+  isConnectedToWiFi = 1;
   return 1;
-  
+}
+
+void connectToMQTT() {
+  unsigned long startTime = millis();
+  unsigned long previousTime = millis();
+  unsigned long period = 15000; //ms
+
+  while (!client.connect(clientId) && startTime - previousTime <= period ) {
+    delay(5000);
+    startTime = millis();
+    Serial.println("Waiting for MQTT to establish a connection.");
+  }
+
+  if (startTime - previousTime > period) {
+    Serial.println("MQTT connection failed, device running locally. Restart if you'd like to retry.");
+    return;
+  }
+
+  Serial.println("MQTT connection established.");
+  isConnectedToMQTT = 1;
 }
 
 // display flushing function (= lvgl makes a graphic but it needs a function to write it to the screen so this is the function)
@@ -296,6 +434,22 @@ void displayText(char text[]) {
 
 void setup() {
   Serial.begin(115200); // begin terminal
+  rtc.begin();
+
+  DateTime now = DateTime(F(__DATE__), F(__TIME__)); // provides current date and time during compilation
+  now = now - TimeSpan(TIMEZONE_OFFSET); // datetime is set to utc
+  rtc.adjust(now); // adjusts the RTC clock so that it can give accurate epochs
+
+  isConnectedToMQTT = 0;
+  isConnectedToWiFi = 0;
+  lv_subject_init_float(&temperatureSubscriber, 0);
+  lv_subject_init_float(&humiditySubscriber, 0);
+  lv_subject_init_float(&soundSubscriber, 0);
+  lv_subject_init_float(&lightingSubscriber, 0);
+
+  dht.begin();
+
+  client.setServer(mqttHost, port);
 
   tft.begin(); // start tft
   tft.setRotation(3); // set rotation to 180 (wio 0 is upside down if you want the 5way switch at the bottom)
@@ -320,4 +474,50 @@ void setup() {
 void loop() {
   lv_timer_handler(); 
   delay(5);
+
+  if (isConnectedToWiFi == 0) {
+    return;
+  }
+
+  float temperatureHumidityValues[2] = {0};
+    // Reading temperature or humidity takes about 250 milliseconds!
+    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+  
+  float lightValue = analogRead(LIGHT_PIN) / 10.0; // get percentage since value is in 1000s
+  float soundValue = analogRead(SOUND_PIN) / 10.0;
+
+
+  if (dht.readTempAndHumidity(temperatureHumidityValues)) { // if readTempAndHumidity returns 1, it's an error, don't ask me idk why they'd have it like this
+      Serial.println("Failed to get temprature and humidity value.");
+      temperatureHumidityValues[0] = -50.0; // indicate failure that gets sent to mqtt, ignore -50 in avg calc
+      temperatureHumidityValues[1] = -50.0 ;
+  }
+
+  // code for receiving sensor values above, every time a value is received, append it to a list (assuming ino can work with lists)
+
+
+  // calculateAverage(); calculate avg of every array reading and save it as a float
+  // then update it in the subscriber for lvgl and mqtt
+  lv_subject_set_float(&temperatureSubscriber, temperatureHumidityValues[1]);
+  lv_subject_set_float(&humiditySubscriber, temperatureHumidityValues[0]);
+  lv_subject_set_float(&soundSubscriber, soundValue);
+  lv_subject_set_float(&lightingSubscriber, lightValue);
+
+  if (isConnectedToMQTT == 0) { // clear lists here in case MQTT is off
+    return;
+  }
+
+  
+
+  // MQTT gets called here
+  char readingsJSON[200]; // buffer for JSON
+  sprintf(readingsJSON, "{\"timestamp\":%ld,\"readings\":{\"temperature\":%.2f,\"humidity\":%.2f,\"lighting\":%.2f,\"sound\":%.2f}}",
+   rtc.now().unixtime(), // unix time epoch
+   temperatureHumidityValues[1],
+   temperatureHumidityValues[0],
+   lightValue,
+   soundValue);
+
+  client.publish(readingsTopic, readingsJSON);
+
 }
