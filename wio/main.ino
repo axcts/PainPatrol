@@ -7,12 +7,7 @@
 TFT_eSPI tft = TFT_eSPI(); // tft instance
 static lv_color_t buf[LV_HOR_RES_MAX * 10]; // display buffer for LVGL (defining how big of a chunk of the display LVGL can work on at once)
 static uint32_t tick(void) { return millis(); } // tick func
-static lv_indev_t *wioSwitch; // init wioSwitch input device
-static lv_group_t *wifiList; // init group for wifi list buttons
-static lv_group_t *keyboard; // init group for keyboard
-static lv_obj_t *passwordPage; // init password page (unfortunately now it has to be global)
-static lv_obj_t *kb; // init keyboard obj
-// i am already afraid of how switching focus is going to be pain with the going back everyone please pray for my sanity
+static lv_group_t *mainGroup; // maybe there was nothing wrong with one giant group
 
 
 // handling the wifi events (click unlocked wifi button or press enter key when done typing password)
@@ -52,85 +47,66 @@ static void wifiEventHandler(lv_event_t *e) {
   }
 }
 
-
-static void pageSwitch(lv_event_t *e) {
-  lv_obj_t *btn = lv_event_get_target_obj(e);
-  char *name = lv_label_get_text(lv_obj_get_child(btn, 0)); // get the label of the button that triggered the event
-  int length = strlen(name); // removing 10 characters (the "(locked)"" part) from it below
-  name[length - 10] = '\0'; // add cutoff character there i :heart: C
-
-  loadPasswordPage(passwordPage, name); // add the correct stuff to the password page
-
-  lv_indev_set_group(wioSwitch, keyboard); // set 5 way switch to manage keyboard group
-  lv_group_focus_obj(kb); // focus the keyboard
-}
-
-
 void displayRegularValues() {
     lv_obj_t *valuesScreen = lv_obj_create(NULL);
     lv_screen_load(valuesScreen);
     lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 }
 
-
 void createWiFiMenu(int available, int wifi[]) {
-  lv_obj_t *cont; // =container
-  lv_obj_t *label; // =text
-  lv_obj_t *btn; // =button
-  lv_obj_t *menu = lv_menu_create(lv_screen_active()); // menu object
+    lv_obj_t *cont; // =container
+    lv_obj_t *label; // =text
+    lv_obj_t *btn; // =button
+    lv_obj_t *menu = lv_menu_create(lv_screen_active()); // menu object
 
-  // style it (size, color, centering)
-  lv_obj_set_size(menu, LV_HOR_RES_MAX, LV_VER_RES_MAX);
-  lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
+    // style it (size, color, centering)
+    lv_obj_set_size(menu, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+    lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
 
-  // make main page (list of wifis) and subpage (potential password input)
-  lv_obj_t *wifiPage = lv_menu_page_create(menu, NULL);
-  passwordPage = lv_menu_page_create(menu, NULL); // make unique password page for each encrypted wifi so we can connect the wifi name to it
+    // make main page (list of wifis) and subpage (potential password input)
+    lv_obj_t *wifiPage = lv_menu_page_create(menu, NULL);
 
-  // for every available wifi make a container with text that has [name of wifi] [indicator if it is locked or not]
-  for (int i = 0; i < available; i++) {
-    cont = lv_menu_cont_create(wifiPage);
-    btn = lv_button_create(cont);
-    label = lv_label_create(btn);
+    // for every available wifi make a container with text that has [name of wifi] [indicator if it is locked or not]
+    for (int i = 0; i < available; i++) {
+      cont = lv_menu_cont_create(wifiPage);
+      btn = lv_button_create(cont);
+      label = lv_label_create(btn);
 
-    lv_obj_set_style_size(cont, LV_HOR_RES_MAX, 30, 0); // set container size
+      lv_obj_set_style_size(cont, LV_HOR_RES_MAX, 30, 0); // set container size
       
-    if (WiFi.encryptionType(wifi[i]) != WIFI_AUTH_OPEN) {
-      lv_menu_set_load_page_event(menu, btn, passwordPage); // if the button is clicked the passwordPage subpage is loaded (for locked wifis)
-      lv_obj_add_event_cb(btn, pageSwitch, LV_EVENT_CLICKED, NULL);
-  
-    } else {
-      lv_obj_add_event_cb(btn, wifiEventHandler, LV_EVENT_CLICKED, NULL);
+      if (WiFi.encryptionType(wifi[i]) != WIFI_AUTH_OPEN) {
+        lv_obj_t *passwordPage = lv_menu_page_create(menu, NULL); // make unique password page for each encrypted wifi so we can connect the wifi name to it
+        createPasswordPage(passwordPage, WiFi.SSID(wifi[i]).c_str()); // i know this is unnecessarily complicated but i dont know how else to go about it
+        lv_menu_set_load_page_event(menu, btn, passwordPage); // if the button is clicked the passwordPage subpage is loaded (for locked wifis)
 
-    }
+      } else {
+        lv_obj_add_event_cb(btn, wifiEventHandler, LV_EVENT_CLICKED, NULL);
+      }
 
-    // make default button style
-    static lv_style_t btnDefault;
-    lv_style_init(&btnDefault);
-    lv_style_set_size(&btnDefault, LV_HOR_RES_MAX, 30); // make it the entire of the screen horizontally and 30px high
-    lv_style_set_shadow_width(&btnDefault, 0); // remove shadow
-    lv_style_set_bg_opa(&btnDefault, LV_OPA_TRANSP); // bg transparent when not focused
-    lv_style_set_radius(&btnDefault, 0); // remove border radius
+      // make default button style
+      static lv_style_t btnDefault;
+      lv_style_init(&btnDefault);
+      lv_style_set_size(&btnDefault, LV_HOR_RES_MAX, 30); // make it the entire of the screen horizontally and 30px high
+      lv_style_set_shadow_width(&btnDefault, 0); // remove shadow
+      lv_style_set_bg_opa(&btnDefault, LV_OPA_TRANSP); // bg transparent when not focused
+      lv_style_set_radius(&btnDefault, 0); // remove border radius
 
-    // make button style for when it is focused
-    static lv_style_t btnFocused;
-    lv_style_init(&btnFocused);
-    lv_style_set_bg_opa(&btnFocused, LV_OPA_COVER); // full opacity bg when focused
-    lv_style_set_bg_color(&btnFocused, lv_color_hex(0x333333)); // set bg to dark grey when focused
+      // make button style for when it is focused
+      static lv_style_t btnFocused;
+      lv_style_init(&btnFocused);
+      lv_style_set_bg_opa(&btnFocused, LV_OPA_COVER); // full opacity bg when focused
+      lv_style_set_bg_color(&btnFocused, lv_color_hex(0x333333)); // set bg to dark grey when focused
 
-    // add styles to corresponding states
-    lv_obj_add_style(btn, &btnDefault, LV_STATE_DEFAULT);
-    lv_obj_add_style(btn, &btnFocused, LV_STATE_FOCUS_KEY);
+      // add styles to corresponding states
+      lv_obj_add_style(btn, &btnDefault, LV_STATE_DEFAULT);
+      lv_obj_add_style(btn, &btnFocused, LV_STATE_FOCUS_KEY);
       
-    const char *locked = (WiFi.encryptionType(wifi[i]) == WIFI_AUTH_OPEN) ? "" : " (locked)"; // if true (wifi is auth open) string is empty else its "(locked)" 
-    lv_label_set_text_fmt(label, "%s %s", WiFi.SSID(wifi[i]).c_str(), locked); // me when String and char[] are not the same :-(
-    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0); // set text color to white
-    lv_group_add_obj(wifiList, btn); // add to wifilist group
-
-    if (i == 0) { lv_group_focus_obj(btn); } // add focus to the first button
+      const char *locked = (WiFi.encryptionType(wifi[i]) == WIFI_AUTH_OPEN) ? "" : " (locked)"; // if true (wifi is auth open) string is empty else its "(locked)" 
+      lv_label_set_text_fmt(label, "%s %s", WiFi.SSID(wifi[i]).c_str(), locked); // me when String and char[] are not the same :-(
+      lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0); // set text color to white
   }
 
-  lv_menu_set_page(menu, wifiPage); // put that beautiful menu (billion containers) on the main page
+    lv_menu_set_page(menu, wifiPage); // put that beautiful menu (billion containers) on the main page
 }
 
 
@@ -146,7 +122,6 @@ void scan() {
   createWiFiMenu(wifiAmount, availableWiFi);
 }
 
-
 // connect to wifi function
 int connectToWifi(const char name[], const char password[]) {
   unsigned long startTime = millis();
@@ -156,10 +131,9 @@ int connectToWifi(const char name[], const char password[]) {
   while (WiFi.status() != WL_CONNECTED && startTime - previousTime <= period ) {
     if (password == "") {
       WiFi.begin(name);
-
-    } else {
+    }
+    else {
       WiFi.begin(name, password);
-
     }
 
     startTime = millis();
@@ -170,8 +144,8 @@ int connectToWifi(const char name[], const char password[]) {
   }
 
   return 1;
+  
 }
-
 
 // display flushing function (= lvgl makes a graphic but it needs a function to write it to the screen so this is the function)
 void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
@@ -187,8 +161,7 @@ void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   lv_display_flush_ready(disp);
 }
 
-
-void loadPasswordPage(lv_obj_t *page, const char wifiName[]) {
+void createPasswordPage(lv_obj_t *page, const char wifiName[]) {
   lv_obj_t *title = lv_label_create(page);
   lv_label_set_text_fmt(title, "Enter password for %s:", wifiName); // display that at the top
   lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), 0); // white text
@@ -203,6 +176,7 @@ void loadPasswordPage(lv_obj_t *page, const char wifiName[]) {
   lv_obj_t *wifiLabel = lv_label_create(passwordField);
   lv_label_set_text(wifiLabel, wifiName);
   lv_obj_add_flag(wifiLabel, LV_OBJ_FLAG_HIDDEN);
+  
 
   // style it
   lv_obj_remove_style(passwordField, NULL, LV_STATE_FOCUS_KEY);
@@ -212,16 +186,15 @@ void loadPasswordPage(lv_obj_t *page, const char wifiName[]) {
   lv_obj_set_style_border_color(passwordField, lv_color_hex(0x444444), 0);
   lv_obj_set_style_text_color(passwordField, lv_color_hex(0xFFFFFF), 0);
 
-  kb = lv_keyboard_create(page); // keyboard widget
-  lv_keyboard_set_textarea(kb, passwordField); // link the keyboard to the password input field
-  lv_group_add_obj(keyboard, kb); // add to keyboard group
-
+  lv_obj_t *keyboard = lv_keyboard_create(page); // keyboard widget
+  lv_keyboard_set_textarea(keyboard, passwordField); // link the keyboard to the password input field
+  
   // prettify the keyboard
-  lv_obj_remove_style(kb, NULL, LV_STATE_FOCUS_KEY);
-  lv_obj_set_style_bg_color(kb, lv_color_hex(0x333333), LV_PART_MAIN);
-  lv_obj_set_style_bg_color(kb, lv_color_hex(0x333333), LV_PART_ITEMS);
-  lv_obj_set_style_text_color(kb, lv_color_hex(0xFFFFFF), LV_PART_ITEMS);
-  lv_obj_set_style_bg_color(kb, lv_color_hex(0x444444), LV_PART_ITEMS | LV_STATE_FOCUSED);
+  lv_obj_remove_style(keyboard, NULL, LV_STATE_FOCUS_KEY);
+  lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x333333), LV_PART_MAIN);
+  lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x333333), LV_PART_ITEMS);
+  lv_obj_set_style_text_color(keyboard, lv_color_hex(0xFFFFFF), LV_PART_ITEMS);
+  lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x444444), LV_PART_ITEMS | LV_STATE_FOCUSED);
 }
 
 
@@ -278,15 +251,15 @@ int getAvailableWiFi(int wifiAmount, int unique[]) {
 void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
   data->key = 0; // assign nonexistent key
   data->state = LV_INDEV_STATE_PRESSED; // so we can make it's initial state pressed so we dont have to repeatedly set the state to pressed in the first 5 cases #lazy
-  lv_obj_t *focused = lv_group_get_focused(keyboard); // check if a keyboard is focused or not (returns pointer to kb or NULL)
+  lv_obj_t *focused = lv_group_get_focused(mainGroup); // get the focused element
 
   // when the funct is called and the 5 way switch is activated in some way set the key to the corresponding lvgl key
   // so 5 way switch right is read as lv_key_right etc.
   if (digitalRead(WIO_5S_UP) == LOW) {
-    data->key = (focused == NULL) ? LV_KEY_PREV : LV_KEY_UP; // if focused is NULL (keyboard is not focused) then its prev if its keyboard then its up
+    data->key = (lv_obj_check_type(focused, &lv_keyboard_class)) ? LV_KEY_UP : LV_KEY_PREV; // if focused is of class keyboard then its up if not its prev
   
   } else if (digitalRead(WIO_5S_DOWN) == LOW) {
-    data->key = (focused == NULL) ? LV_KEY_NEXT : LV_KEY_DOWN; // sorry guys i started liking the ternary operator too much
+    data->key = (lv_obj_check_type(focused, &lv_keyboard_class)) ? LV_KEY_DOWN : LV_KEY_NEXT;  // sorry guys i started liking the ternary operator too much
   
   } else if (digitalRead(WIO_5S_LEFT) == LOW) {
     data->key = LV_KEY_LEFT;
@@ -316,7 +289,7 @@ void setupSwitch(lv_indev_t *wioSwitch) {
 }
 
 
-// basic tft text display for before lvgl is done making first page
+// basic tft text display funct for before lvgl is done making first page
 void displayText(char text[]) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(1);
@@ -336,13 +309,14 @@ void setup() {
   createDisplay();
   displayText("Scanning for networks..."); // loading screen text :3
 
-  wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
+  lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
   setupSwitch(wioSwitch); // set it Up!
 
-  wifiList = lv_group_create(); // create wifi list grp
-  keyboard = lv_group_create(); // create keyb grp
-  lv_indev_set_group(wioSwitch, wifiList); // make 5 way switch the input device for this group of objects
-
+  mainGroup = lv_group_create(); // create group for objects
+  lv_indev_set_group(wioSwitch, mainGroup); // make 5 way switch the input device for this group of objects
+  lv_group_set_default(mainGroup); // set it as the default group for all objects created after this point 
+  // that is subject to change as we will have subpages and different input handling will be needed but it is ok for now
+  // that was a lie i am going back to one gigagroup i cant deal with manual focus
   scan();
 }
 
@@ -350,6 +324,4 @@ void loop() {
   lv_timer_handler(); 
   delay(5);
 }
-
-
 
