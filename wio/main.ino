@@ -75,7 +75,7 @@ static void pageSwitch(lv_event_t *e) {
       lv_group_focus_obj(backButton); // focus the back btn so its clickable by the top button
 
     } else {
-      lv_group_focus_obj(current); // focus back on the wifi that was clicked
+      lv_group_focus_obj(current); // focus back on the button that was clicked
 
     }
   }
@@ -226,7 +226,7 @@ static void loadPasswordPage(lv_event_t *e) {
 
   static lv_obj_t *keyboard = lv_keyboard_create(subPage); // keyboard widget
   lv_keyboard_set_textarea(keyboard, passwordField); // link the keyboard to the password input field
-  lv_group_focus_obj(keyboard);
+  lv_group_focus_obj(keyboard); // focus kb
   
   // prettify the keyboard
   lv_obj_remove_style(keyboard, NULL, LV_STATE_FOCUS_KEY);
@@ -328,8 +328,9 @@ void setupSwitch(lv_indev_t *wioSwitch) {
 }
 
 
+// same as switch
 void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
-  data->key = NULL; // same logic. set state pressed to nonexistent key
+  data->key = NULL; 
   data->state = LV_INDEV_STATE_PRESSED; 
 
   // WHY IS EVERYTHING BACKWARDS ON THIS DEVICE I SPENT AN HOUR THINKING THERE WAS SOMETHIGN WRONG WITH MY LOGIC
@@ -337,6 +338,18 @@ void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
   if (digitalRead(WIO_KEY_C) == LOW) { // C is top left button youre welcome
     data->key = LV_KEY_ENTER;
 
+  /* 
+  if you uncomment it will use all 3 for back button so dont (yet)
+  this is placeholder for all the other btns cause i think we will need to use atleast 1 other one at some point
+  once that time comes we can connect them by Not using data->key bc again it will mean all 3 work for the focused button
+  we will just have to make the button call an event on the specific object we want
+  note to myself then we can get rid of the object focus logic entirely yay
+  } else if (digitalRead(WIO_KEY_B) == LOW) {
+    data->key = LV_KEY_ENTER;
+  
+  } else if (digitalRead(WIO_KEY_A) == LOW) {
+    data->key = LV_KEY_ENTER; */
+  
   } else {
     data->state = LV_INDEV_STATE_RELEASED; 
 
@@ -349,8 +362,7 @@ void setupButton(lv_indev_t *wioButton) {
   pinMode(WIO_KEY_B, INPUT_PULLUP);
   pinMode(WIO_KEY_C, INPUT_PULLUP);
 
-  lv_indev_set_type(wioButton, LV_INDEV_TYPE_KEYPAD); // 
-  // lv_indev_set_button_points(wioButton, pointsArray); // what the hell man
+  lv_indev_set_type(wioButton, LV_INDEV_TYPE_KEYPAD); // blasphemy
   lv_indev_set_read_cb(wioButton, readButton); // set the input reading function
 }
 
@@ -374,12 +386,6 @@ void setup() {
 
   createDisplay();
   displayText("Scanning for networks..."); // loading screen text :3
-
-  /* static const lv_point_t pointsArray[] = {
-    {10,10}, // first button is top left
-    {60,90},  // Second button is assigned to x=60; y=90 nice thanks lvgl docs 
-    {20,20} // this is a random placeholder
-  }; THIS COORDINATE STUFF SUCKS!!!! but commenting it out in case we might come back to it */
 
   lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
   lv_indev_t *wioButton = lv_indev_create(); // create for button
