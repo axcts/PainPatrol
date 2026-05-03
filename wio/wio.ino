@@ -28,8 +28,26 @@ lv_subject_t humiditySubscriber;
 lv_subject_t soundSubscriber;
 lv_subject_t lightingSubscriber;
 
+lv_obj_t *statusScreen; // page for the colour-coded message
+lv_obj_t *valuesScreen; // page for the actual values
+
 int isConnectedToWiFi;
 int isConnectedToMQTT;
+
+struct SensorMeta {
+  float minVal;
+  float maxVal;
+  const char *tooLowMsg; // message for below minVal
+  const char *tooHighMsg; // message for above maxVal
+  const char *okMsg; // within threshold
+};
+
+int getSensorStatus(float value, float minVal, float maxVal) {
+  // a simple check if the sensor's reading is below/above/within threshold
+  if (value < minVal) return -1;
+  if (value > maxVal) return 1;
+  return 0;
+}
 
 static void valueChangedCallback(lv_observer_t *observer, lv_subject_t *subject) {
     lv_obj_t *label = lv_observer_get_target_obj(observer);
