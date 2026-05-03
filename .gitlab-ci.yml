@@ -22,7 +22,7 @@ android-job:
   cache: # cache since builds are looooong w/ CI
     key: ${CI_COMMIT_REF_SLUG}
     paths:
-    - .androidapp/gradle/
+    - ./androidapp/gradle/
   before_script:
     - export GRADLE_USER_HOME=$(pwd)/.gradle
   tags:

@@ -30,5 +30,6 @@ arduino-cli lib install "Seeed Arduino SFUD"
 arduino-cli lib install "Seeed Arduino rpcUnified"
 arduino-cli lib install "Seeed Arduino rpcWiFi"
 arduino-cli lib install "Seeed_Arduino_mbedtls"
+arduino-cli lib install "Seeed Arduino RTC"
 
 cd - # Return to previous working directory
