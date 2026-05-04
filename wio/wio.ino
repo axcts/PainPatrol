@@ -1,6 +1,5 @@
 #include <lvgl.h> // graphics library
 #include <TFT_eSPI.h> // (library for LCD display)
-#include "rpcWiFi.h" // wifi library
 #include <PubSubClient.h> // mqtt
 #include "DateTime.h"
 #include "RTC_SAMD51.h" // RTC clock so that our microcontroller knows when 1970 was compared to now
@@ -319,12 +318,6 @@ static void wifiEventHandler(lv_event_t *e) {
     connectToMQTT();
     displayRegularValues();
   }
-}
-
-void displayRegularValues() {
-    lv_obj_t *valuesScreen = lv_obj_create(NULL);
-    lv_screen_load(valuesScreen);
-    lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 }
 
 
