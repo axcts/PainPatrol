@@ -108,6 +108,10 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
 
         cell = lv_obj_create(grid);
 
+        // style the cell to match both (values & status) grids
+        lv_obj_set_style_bg_color(cell, lv_color_hex(0x16213E), 0);
+        lv_obj_set_style_border_color(cell, lv_color_hex(0x16213E), 0);
+
         // set the cell's position in the grid and have it stretch to fill the entire width & height of the cell
         lv_obj_set_grid_cell(cell, LV_GRID_ALIGN_STRETCH, column, 1, LV_GRID_ALIGN_STRETCH, row, 1);
 
@@ -129,6 +133,9 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
         lv_subject_add_observer_obj(subscribers[i], valueChangedCallback, valueLabel, (void *) unit);
 
         lv_label_set_text_fmt(cellLabel, "%s", cellLabels[i]);
+        
+        lv_obj_set_style_text_color(cellLabel, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_text_color(valueLabel, lv_color_hex(0xFFFFFF), 0);
 
         lv_obj_align(cellLabel, LV_ALIGN_TOP_MID, 0, 0); // align cell label to top mid without an offset
         lv_obj_center(valueLabel);
