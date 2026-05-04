@@ -41,6 +41,7 @@ const char * clientId = "wio-terminal";
 int isConnectedToWiFi;
 int isConnectedToMQTT;
 
+unsigned long globalBuzzerTime;
 
 struct SensorMeta {
   float minVal;
@@ -157,6 +158,24 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
     lv_obj_set_style_pad_column(grid, 4, 0);
 }
 
+void buzz() {
+  // prevent buzzer from buzzing too frequently
+
+  if (millis() - globalBuzzerTime >= BUZZER_COOLDOWN) {
+
+    for (int i = 0; i < BUZZ_AMOUNT; i++) {
+      analogWrite(WIO_BUZZER, 16);
+
+      delay(BUZZ_TIME);
+
+      analogWrite(WIO_BUZZER, 0);
+
+      delay(BUZZ_TIME);
+    }
+
+    globalBuzzerTime = millis();
+  }
+}
 
 static void statusChangedCallback(lv_observer_t *observer, lv_subject_t *subject)
 {
@@ -178,6 +197,8 @@ static void statusChangedCallback(lv_observer_t *observer, lv_subject_t *subject
   {
     colour = lv_color_hex(0xFF0000); // red is bad :c
     statusMsg = (status == -1) ? meta->tooLowMsg : meta->tooHighMsg;
+
+    buzz();
   }
 
   lv_label_set_text(valueLabel, statusMsg);
@@ -692,6 +713,10 @@ void setup() {
 
   createDisplay();
   displayText("Scanning for networks..."); // loading screen text :3
+
+  // allocate built-in buzzer to be output
+  pinMode(WIO_BUZZER, OUTPUT);
+  globalBuzzerTime = 0;
 
   lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
   lv_indev_t *wioButton = lv_indev_create(); // create for button
