@@ -16,6 +16,6 @@
 #define HUMIDITY_MIN 30.0f
 #define HUMIDITY_MAX 60.0f
 
-#define BUZZER_COOLDOWN 120000 //ms, 2 mins
+#define BUZZER_COOLDOWN 90000 //ms, 2 mins
 #define BUZZ_TIME 400 //ms, .2s
 #define BUZZ_AMOUNT 3
