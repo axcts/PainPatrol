@@ -495,7 +495,7 @@ static void loadPasswordPage(lv_event_t *e) {
   lv_obj_add_event_cb(passwordField, wifiEventHandler, LV_EVENT_READY, NULL);
 
   // make label with wifi name but hide it 
-  static lv_obj_t *wifiLabel = lv_label_create(subPage);
+  static lv_obj_t *wifiLabel = lv_label_create(passwordField);
   lv_label_set_text(wifiLabel, wifiName);
   lv_obj_add_flag(wifiLabel, LV_OBJ_FLAG_HIDDEN);
 
