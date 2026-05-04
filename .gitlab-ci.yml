@@ -1,0 +1,33 @@
+stages:
+  - build # only one stage for now and that is building wio and android app
+
+wio-job:
+  stage: build
+  image: ubuntu:latest # docker image is ubuntu
+  tags:
+    - docker # the runner tag used is docker
+  script:
+    - export PATH=$PATH:/root/bin
+    - pwd
+    - chmod +x setup-build-env.sh # enable execution of setup shell file
+    - ./setup-build-env.sh
+    - cd wio
+    - rm -rf /root/Arduino/libraries/lvgl/src/draw/sw/blend/helium # get rid of helium (hopefully)
+    - cp lv_conf.h /root/Arduino/libraries/lv_conf.h # copy lv_conf.h to it's correct spot (hopefully)
+    - arduino-cli compile --fqbn Seeeduino:samd:seeed_wio_terminal # compile project w/ wio terminal using arduino
+
+android-job:
+  stage: build
+  image: jangrewe/gitlab-ci-android
+  cache: # cache since builds are looooong w/ CI
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+    - ./androidapp/gradle/
+  before_script:
+    - export GRADLE_USER_HOME=$(pwd)/.gradle
+  tags:
+    - docker
+  script:
+    - cd androidapp
+    - chmod +x ./gradlew
+    - ./gradlew build
