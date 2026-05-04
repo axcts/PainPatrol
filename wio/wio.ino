@@ -132,12 +132,118 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
 
         lv_obj_align(cellLabel, LV_ALIGN_TOP_MID, 0, 0); // align cell label to top mid without an offset
         lv_obj_center(valueLabel);
-
     }
 
     // reduce gap between cells
     lv_obj_set_style_pad_row(grid, 4, 0);
     lv_obj_set_style_pad_column(grid, 4, 0);
+}
+
+static void statusChangedCallback(lv_observer_t *observer, lv_subject_t *subject)
+{
+  lv_obj_t *valueLabel = lv_observer_get_target_obj(observer);
+  SensorMeta *meta = (SensorMeta *)lv_observer_get_user_data(observer); // convert to SensorMeta so we can use its fields
+
+  float value = lv_subject_get_float(subject); // sensor's value
+  int status = getSensorStatus(value, meta->minVal, meta->maxVal); // helper func to check if it's below/above/within threshold (-1/1/0)
+
+  lv_color_t colour;
+  const char *statusMsg;
+
+  if (status == 0)
+  {
+    colour = lv_color_hex(0x00FF00); // green is good
+    statusMsg = meta->okMsg;
+  }
+  else
+  {
+    colour = lv_color_hex(0xFF0000); // red is bad :c
+    statusMsg = (status == -1) ? meta->tooLowMsg : meta->tooHighMsg;
+  }
+
+  lv_label_set_text(valueLabel, statusMsg);
+  lv_obj_set_style_text_color(valueLabel, colour, 0);
+}
+
+void displayStatusGrid(lv_obj_t *parent)
+{ // for now it's just a close cousin of display2x2Grid, the differences are
+  // colour-coded messages for status (uses diff callback fun), no units, and new cell styling
+  // likely can be refactored into one page
+  // now there are two pages that can be changed by moving the joystick left/right
+
+  static int32_t cellColumns[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+  static int32_t cellRows[] = {LV_GRID_FR(1), LV_GRID_FR(1), LV_GRID_TEMPLATE_LAST};
+
+  lv_obj_t *grid = lv_obj_create(parent); // create grid inside of parent object (whatever that may be)
+
+  lv_obj_set_size(grid, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+  lv_obj_center(grid);
+
+  // the grid is described through the cellColumns and the cellRows
+  lv_obj_set_grid_dsc_array(grid, cellColumns, cellRows);
+
+  // styling
+  lv_obj_set_style_bg_color(grid, lv_color_hex(0x000000), 0);
+  lv_obj_set_style_radius(grid, 0, 0);
+  lv_obj_set_style_border_color(grid, lv_color_hex(0x000000), 0);
+
+  // get rid of padding so cells can fill the entire screen
+  lv_obj_set_style_pad_left(grid, 0, 0);
+  lv_obj_set_style_pad_right(grid, 0, 0);
+  lv_obj_set_style_pad_top(grid, 0, 0);
+  lv_obj_set_style_pad_bottom(grid, 0, 0);
+
+  // so we don't make a new variable each time in the loop
+  lv_obj_t *valueLabel;
+  lv_obj_t *cellLabel;
+  lv_obj_t *cell;
+
+  static SensorMeta sensorMeta[4] = {
+      {TEMP_MIN,     TEMP_MAX,     "Too cold", "Too hot",   "Good"},
+      {HUMIDITY_MIN, HUMIDITY_MAX, "Too dry",  "Too humid", "Good"},
+      {LIGHT_MIN,    LIGHT_MAX,    "Too dark", "Too bright","Good"},
+      {SOUND_MIN,    SOUND_MAX,    "Too quiet","Too loud",  "Good"},
+  };
+
+  const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
+  lv_subject_t *subscribers[4] = {&temperatureSubscriber, &humiditySubscriber, &lightingSubscriber, &soundSubscriber};
+  // we want to borrow the value from the subscribers, which is why we have the & symbol
+  // if we didn't do this we'd get a copy of the temperature subscriber (which then doesn't have the callback called every time, meaning we'd just
+  // have one initial reading and then nothing)
+
+  // yes it's a static value, could later make it dynamic by removing static from cellColumns and cellRows
+  // but the documentation does not seem to like that, so for now it's kept
+  for (int i = 0; i < 4; i++)
+  {
+    // get position of cell in the grid and create the cell object
+    int column = i % 2;
+    int row = i / 2;
+
+    cell = lv_obj_create(grid);
+    lv_obj_set_style_bg_color(cell, lv_color_hex(0x16213E), 0); // dark blue cell background
+    lv_obj_set_style_border_color(cell, lv_color_hex(0x16213E), 0);
+
+    // set the cell's position in the grid and have it stretch to fill the entire width & height of the cell
+    lv_obj_set_grid_cell(cell, LV_GRID_ALIGN_STRETCH, column, 1, LV_GRID_ALIGN_STRETCH, row, 1);
+
+    cellLabel = lv_label_create(cell);
+    valueLabel = lv_label_create(cell);
+
+    // last parameter as per docs is user_data which is of type void *, void * just means that you can use any type
+    // however we then need to handle that in the callback when we use it (i.e. converting the void * to SensorMeta)
+    // basically a generic if you know abt it
+    lv_subject_add_observer_obj(subscribers[i], statusChangedCallback, valueLabel, (void *)&sensorMeta[i]);
+
+    lv_label_set_text_fmt(cellLabel, "%s", cellLabels[i]);
+    lv_obj_set_style_text_color(cellLabel, lv_color_hex(0xFFFFFF), 0); // white sensor name
+
+    lv_obj_align(cellLabel, LV_ALIGN_TOP_MID, 0, 0); // align cell label to top mid without an offset
+    lv_obj_center(valueLabel);
+  }
+
+  // reduce gap between cells
+  lv_obj_set_style_pad_row(grid, 4, 0);
+  lv_obj_set_style_pad_column(grid, 4, 0);
 }
 
 void displayRegularValues() {
