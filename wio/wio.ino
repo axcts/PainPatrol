@@ -253,13 +253,18 @@ void displayStatusGrid(lv_obj_t *parent)
   lv_obj_set_style_pad_column(grid, 4, 0);
 }
 
+// maybe should be renamed as it now handles both values screen and status screen
 void displayRegularValues() {
-    // create an empty screen to then switch to and set its size
-    lv_obj_t *valuesScreen = lv_obj_create(NULL);
-    lv_screen_load(valuesScreen);
+    statusScreen = lv_obj_create(NULL);
+    valuesScreen = lv_obj_create(NULL);
+
+    lv_obj_set_size(statusScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
     lv_obj_set_size(valuesScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 
+    displayStatusGrid(statusScreen);
     display2x2Grid(valuesScreen);
+
+    lv_screen_load(statusScreen); // start on status screen by default
 }
 
 // handling the wifi events (click unlocked wifi button or press enter key when done typing password)
@@ -514,6 +519,18 @@ int getAvailableWiFi(int wifiAmount, int unique[]) {
   return counter;
 }
 
+// navigating between colour-coded page and values page
+// moving the joystick to the right takes you to the actual values
+void handleScreenSwitch(lv_indev_data_t *data)
+{
+  lv_obj_t *current = lv_screen_active();
+
+  if (data->key == LV_KEY_RIGHT && current == statusScreen) {
+    lv_screen_load(valuesScreen); // right: values screen
+  } else if (data->key == LV_KEY_LEFT && current == valuesScreen) {
+    lv_screen_load(statusScreen); // left: back to status screen
+  }
+}
 
 // function for reading 5 way switch as per lvgl docs template for any input device
 void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
@@ -541,6 +558,9 @@ void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
   } else { // if it doesn't read anything from the 5 way switch make the key state released
     data->state = LV_INDEV_STATE_RELEASED;
   }
+
+  // maybe there is a better place to put it but it works for now (?)
+  handleScreenSwitch(data); // handle screen switching (moving right/left between pages)
 }   
 
 
