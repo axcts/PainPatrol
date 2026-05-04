@@ -7,20 +7,22 @@
 #include "conf.h" // custom constants
 #include "Grove_Temperature_And_Humidity_Sensor.h"
 
+
 DHT dht(DHT_PIN, DHT_TYPE);
 RTC_SAMD51 rtc; // https://wiki.seeedstudio.com/Wio-Terminal-RTC/
+TFT_eSPI tft = TFT_eSPI(); // tft instance
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient); // create wifi client for mqtt
 
-const char * mqttHost = "broker.hivemq.com";
-const int port = 1883;
-const char * readingsTopic = "painpatrol/readings"; // for publishing
-const char * clientId = "wio-terminal";
-
-TFT_eSPI tft = TFT_eSPI(); // tft instance
+// new wall of const (wall of static)
 static lv_color_t buf[LV_HOR_RES_MAX * 10]; // display buffer for LVGL (defining how big of a chunk of the display LVGL can work on at once)
 static uint32_t tick(void) { return millis(); } // tick func
+static lv_group_t *mainGroup; // maybe there was nothing wrong with one giant group
+static lv_group_t *buttons; 
+static lv_obj_t *mainPage; // globalized out of desperation but we will reuse menu anyway right (copium)
+static lv_obj_t *subPage; 
+static lv_obj_t *current; // i'm so sorry
 
 // Subscribers inside of LVGL, not MQTT!!
 lv_subject_t temperatureSubscriber;
@@ -31,8 +33,14 @@ lv_subject_t lightingSubscriber;
 lv_obj_t *statusScreen; // page for the colour-coded message
 lv_obj_t *valuesScreen; // page for the actual values
 
+const char * mqttHost = "broker.hivemq.com";
+const int port = 1883;
+const char * readingsTopic = "painpatrol/readings"; // for publishing
+const char * clientId = "wio-terminal";
+
 int isConnectedToWiFi;
 int isConnectedToMQTT;
+
 
 struct SensorMeta {
   float minVal;
@@ -42,12 +50,14 @@ struct SensorMeta {
   const char *okMsg; // within threshold
 };
 
+
 int getSensorStatus(float value, float minVal, float maxVal) {
   // a simple check if the sensor's reading is below/above/within threshold
   if (value < minVal) return -1;
   if (value > maxVal) return 1;
   return 0;
 }
+
 
 static void valueChangedCallback(lv_observer_t *observer, lv_subject_t *subject) {
     lv_obj_t *label = lv_observer_get_target_obj(observer);
@@ -58,6 +68,7 @@ static void valueChangedCallback(lv_observer_t *observer, lv_subject_t *subject)
 
     lv_label_set_text_fmt(label, "%.2f %s", value, unit);
 }
+
 
 void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid in the lvgl docs
     // takes up remaining area (fraction) of space remaining in the grid
@@ -146,6 +157,7 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
     lv_obj_set_style_pad_column(grid, 4, 0);
 }
 
+
 static void statusChangedCallback(lv_observer_t *observer, lv_subject_t *subject)
 {
   lv_obj_t *valueLabel = lv_observer_get_target_obj(observer);
@@ -171,6 +183,7 @@ static void statusChangedCallback(lv_observer_t *observer, lv_subject_t *subject
   lv_label_set_text(valueLabel, statusMsg);
   lv_obj_set_style_text_color(valueLabel, colour, 0);
 }
+
 
 void displayStatusGrid(lv_obj_t *parent)
 { // for now it's just a close cousin of display2x2Grid, the differences are
@@ -253,6 +266,7 @@ void displayStatusGrid(lv_obj_t *parent)
   lv_obj_set_style_pad_column(grid, 4, 0);
 }
 
+
 // maybe should be renamed as it now handles both values screen and status screen
 void displayRegularValues() {
     statusScreen = lv_obj_create(NULL);
@@ -266,6 +280,7 @@ void displayRegularValues() {
 
     lv_screen_load(statusScreen); // start on status screen by default
 }
+
 
 // handling the wifi events (click unlocked wifi button or press enter key when done typing password)
 static void wifiEventHandler(lv_event_t *e) {
@@ -305,6 +320,29 @@ static void wifiEventHandler(lv_event_t *e) {
   }
 }
 
+
+static void pageSwitch(lv_event_t *e) {
+  lv_event_code_t code = lv_event_get_code(e); // event
+  lv_obj_t *obj = lv_event_get_target_obj(e); // obj that triggered event
+
+  // event_value_changed is triggered by menu upon change in the menu
+  if (code == LV_EVENT_VALUE_CHANGED) { // that means either it loads the main or any of the sub pages
+    lv_obj_t *page = lv_menu_get_cur_main_page(obj); // get current main page
+
+    if (page == subPage) { // if its a subpage
+      lv_obj_t *backButton = lv_menu_get_main_header_back_button(obj);
+      lv_group_add_obj(buttons, backButton);
+      lv_obj_remove_style(backButton, NULL, LV_STATE_FOCUS_KEY);
+      lv_group_focus_obj(backButton); // focus the back btn so its clickable by the top button
+
+    } else {
+      lv_group_focus_obj(current); // focus back on the button that was clicked
+
+    }
+  }
+}
+
+
 void createWiFiMenu(int available, int wifi[]) {
     lv_obj_t *cont; // =container
     lv_obj_t *label; // =text
@@ -314,23 +352,23 @@ void createWiFiMenu(int available, int wifi[]) {
     // style it (size, color, centering)
     lv_obj_set_size(menu, LV_HOR_RES_MAX, LV_VER_RES_MAX);
     lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
+    lv_obj_add_event_cb(menu, pageSwitch, LV_EVENT_VALUE_CHANGED, NULL);
 
     // make main page (list of wifis) and subpage (potential password input)
-    
-    lv_obj_t *wifiPage = lv_menu_page_create(menu, NULL);
+    mainPage = lv_menu_page_create(menu, NULL);
+    subPage = lv_menu_page_create(menu, NULL); 
 
     // for every available wifi make a container with text that has [name of wifi] [indicator if it is locked or not]
     for (int i = 0; i < available; i++) {
-      cont = lv_menu_cont_create(wifiPage);
+      cont = lv_menu_cont_create(mainPage);
       btn = lv_button_create(cont);
       label = lv_label_create(btn);
 
       lv_obj_set_style_size(cont, LV_HOR_RES_MAX, 30, 0); // set container size
       
       if (WiFi.encryptionType(wifi[i]) != WIFI_AUTH_OPEN) {
-        lv_obj_t *passwordPage = lv_menu_page_create(menu, NULL); // make unique password page for each encrypted wifi so we can connect the wifi name to it
-        createPasswordPage(passwordPage, WiFi.SSID(wifi[i]).c_str()); // i know this is unnecessarily complicated but i dont know how else to go about it
-        lv_menu_set_load_page_event(menu, btn, passwordPage); // if the button is clicked the passwordPage subpage is loaded (for locked wifis)
+        lv_menu_set_load_page_event(menu, btn, subPage); // if the button is clicked the passwordPage subpage is loaded
+        lv_obj_add_event_cb(btn, loadPasswordPage, LV_EVENT_CLICKED, NULL); // run loadPasswordPage on button click
 
       } else {
         lv_obj_add_event_cb(btn, wifiEventHandler, LV_EVENT_CLICKED, NULL);
@@ -359,7 +397,7 @@ void createWiFiMenu(int available, int wifi[]) {
       lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0); // set text color to white
   }
 
-    lv_menu_set_page(menu, wifiPage); // put that beautiful menu (billion containers) on the main page
+    lv_menu_set_page(menu, mainPage); // put that beautiful menu (billion containers) on the main page
 }
 
 
@@ -374,6 +412,7 @@ void scan() {
 
   createWiFiMenu(wifiAmount, availableWiFi);
 }
+
 
 // connect to wifi function
 int connectToWifi(const char name[], const char password[]) {
@@ -420,6 +459,7 @@ void connectToMQTT() {
   isConnectedToMQTT = 1;
 }
 
+
 // display flushing function (= lvgl makes a graphic but it needs a function to write it to the screen so this is the function)
 void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   uint32_t w = (area->x2 - area->x1 + 1);
@@ -434,24 +474,32 @@ void displayFlush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map) {
   lv_display_flush_ready(disp);
 }
 
-void createPasswordPage(lv_obj_t *page, const char wifiName[]) {
-  lv_obj_t *title = lv_label_create(page);
+
+static void loadPasswordPage(lv_event_t *e) {
+  lv_obj_t *btn = lv_event_get_target_obj(e);
+  current = btn;
+
+  char *label = lv_label_get_text(lv_obj_get_child(btn, 0)); // get the label of the button that triggered the event
+  char wifiName[strlen(label)]; // make new wifiName string
+  strcpy(wifiName, label); // copy label to it
+  wifiName[strlen(label) - 10] = '\0'; // remove " (locked)" by adding string cutoff 
+
+  static lv_obj_t *title = lv_label_create(subPage);
   lv_label_set_text_fmt(title, "Enter password for %s:", wifiName); // display that at the top
   lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), 0); // white text
   lv_obj_set_style_margin_bottom(title, 8, 0);
 
-  lv_obj_t *passwordField = lv_textarea_create(page); // create password input field
+  static lv_obj_t *passwordField = lv_textarea_create(subPage); // create password input field
   lv_textarea_set_password_mode(passwordField, true); // hide the actual password
   lv_textarea_set_one_line(passwordField, true); // one line input
   lv_obj_add_event_cb(passwordField, wifiEventHandler, LV_EVENT_READY, NULL);
 
-  // make label with wifi name but hide it
-  lv_obj_t *wifiLabel = lv_label_create(passwordField);
+  // make label with wifi name but hide it 
+  static lv_obj_t *wifiLabel = lv_label_create(passwordField);
   lv_label_set_text(wifiLabel, wifiName);
   lv_obj_add_flag(wifiLabel, LV_OBJ_FLAG_HIDDEN);
-  
 
-  // style it
+  // style the field
   lv_obj_remove_style(passwordField, NULL, LV_STATE_FOCUS_KEY);
   lv_obj_set_width(passwordField, LV_HOR_RES_MAX - 20);
   lv_obj_set_style_margin_bottom(passwordField, 46, 0);
@@ -459,8 +507,9 @@ void createPasswordPage(lv_obj_t *page, const char wifiName[]) {
   lv_obj_set_style_border_color(passwordField, lv_color_hex(0x444444), 0);
   lv_obj_set_style_text_color(passwordField, lv_color_hex(0xFFFFFF), 0);
 
-  lv_obj_t *keyboard = lv_keyboard_create(page); // keyboard widget
+  static lv_obj_t *keyboard = lv_keyboard_create(subPage); // keyboard widget
   lv_keyboard_set_textarea(keyboard, passwordField); // link the keyboard to the password input field
+  lv_group_focus_obj(keyboard); // focus kb
   
   // prettify the keyboard
   lv_obj_remove_style(keyboard, NULL, LV_STATE_FOCUS_KEY);
@@ -471,7 +520,7 @@ void createPasswordPage(lv_obj_t *page, const char wifiName[]) {
 }
 
 
-// just initializig the display as per lvgl docs
+// just initializing the display as per lvgl docs
 void createDisplay() {
   lv_display_t *disp = lv_display_create(LV_HOR_RES_MAX, LV_VER_RES_MAX); // create display instance
   lv_display_set_buffers(disp, buf, NULL, sizeof(buf), LV_DISPLAY_RENDER_MODE_PARTIAL); // set the buffer for the display
@@ -519,6 +568,7 @@ int getAvailableWiFi(int wifiAmount, int unique[]) {
   return counter;
 }
 
+
 // navigating between colour-coded page and values page
 // moving the joystick to the right takes you to the actual values
 void handleScreenSwitch(lv_indev_data_t *data)
@@ -532,19 +582,20 @@ void handleScreenSwitch(lv_indev_data_t *data)
   }
 }
 
+
 // function for reading 5 way switch as per lvgl docs template for any input device
 void readSwitch(lv_indev_t *indev, lv_indev_data_t *data) {
   data->key = 0; // assign nonexistent key
   data->state = LV_INDEV_STATE_PRESSED; // so we can make it's initial state pressed so we dont have to repeatedly set the state to pressed in the first 5 cases #lazy
-
+  lv_obj_t *focused = lv_group_get_focused(mainGroup); // get the focused element
 
   // when the funct is called and the 5 way switch is activated in some way set the key to the corresponding lvgl key
   // so 5 way switch right is read as lv_key_right etc.
   if (digitalRead(WIO_5S_UP) == LOW) {
-    data->key = LV_KEY_PREV;
+    data->key = (lv_obj_check_type(focused, &lv_keyboard_class)) ? LV_KEY_UP : LV_KEY_PREV; // if focused is of class keyboard then its up if not its prev
   
   } else if (digitalRead(WIO_5S_DOWN) == LOW) {
-    data->key = LV_KEY_NEXT;
+    data->key = (lv_obj_check_type(focused, &lv_keyboard_class)) ? LV_KEY_DOWN : LV_KEY_NEXT;  // sorry guys i started liking the ternary operator too much
   
   } else if (digitalRead(WIO_5S_LEFT) == LOW) {
     data->key = LV_KEY_LEFT;
@@ -576,6 +627,37 @@ void setupSwitch(lv_indev_t *wioSwitch) {
   lv_indev_set_read_cb(wioSwitch, readSwitch); // set the input reading function
 }
 
+
+// same as switch
+void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
+  data->key = NULL; 
+  data->state = LV_INDEV_STATE_PRESSED; 
+
+  // WHY IS EVERYTHING BACKWARDS ON THIS DEVICE I SPENT AN HOUR THINKING THERE WAS SOMETHIGN WRONG WITH MY LOGIC
+  // and i ended up removing most of it because the coordinate system is so obscure.. this is wrong but easier to manage
+  if (digitalRead(WIO_KEY_C) == LOW) { // C is top left button youre welcome. if you add any of the other buttons into this handler
+    // then they will all be valid presses on the back button so i think if we need the other buttons we will need to make separate handlers
+    // or we dont use data->key but call events instead
+    data->key = LV_KEY_ENTER;
+  
+  } else {
+    data->state = LV_INDEV_STATE_RELEASED; 
+
+  }
+}
+
+
+void setupButton(lv_indev_t *wioButton) {
+  pinMode(WIO_KEY_A, INPUT_PULLUP);
+  pinMode(WIO_KEY_B, INPUT_PULLUP);
+  pinMode(WIO_KEY_C, INPUT_PULLUP);
+
+  lv_indev_set_type(wioButton, LV_INDEV_TYPE_KEYPAD); // blasphemy
+  lv_indev_set_read_cb(wioButton, readButton); // set the input reading function
+}
+
+
+// basic tft text display funct for before lvgl is done making first page
 void displayText(char text[]) {
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(1);
@@ -612,12 +694,15 @@ void setup() {
   displayText("Scanning for networks..."); // loading screen text :3
 
   lv_indev_t *wioSwitch = lv_indev_create(); // create input device instance for 5 way switch
-  setupSwitch(wioSwitch); // set it Up!
+  lv_indev_t *wioButton = lv_indev_create(); // create for button
+  setupSwitch(wioSwitch); // set up
+  setupButton(wioButton); // yes
 
-  static lv_group_t *wifiList = lv_group_create(); // create group for objects
-  lv_indev_set_group(wioSwitch, wifiList); // make 5 way switch the input device for this group of objects
-  lv_group_set_default(wifiList); // set it as the default group for all objects created after this point 
-  // that is subject to change as we will have subpages and different input handling will be needed but it is ok for now
+  mainGroup = lv_group_create(); // create group for objects
+  buttons = lv_group_create(); // create group for buttons
+  lv_indev_set_group(wioSwitch, mainGroup); // make 5 way switch the input device for this group of objects
+  lv_indev_set_group(wioButton, buttons);
+  lv_group_set_default(mainGroup); // set it as the default group for all objects created after this point 
 
   scan();
 }
@@ -633,7 +718,6 @@ void loop() {
   float temperatureHumidityValues[2] = {0};
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  
   float lightValue = analogRead(LIGHT_PIN) / 10.0; // get percentage since value is in 1000s
   float soundValue = analogRead(SOUND_PIN) / 10.0;
 
@@ -645,8 +729,6 @@ void loop() {
   }
 
   // code for receiving sensor values above, every time a value is received, append it to a list (assuming ino can work with lists)
-
-
   // calculateAverage(); calculate avg of every array reading and save it as a float
   // then update it in the subscriber for lvgl and mqtt
   lv_subject_set_float(&temperatureSubscriber, temperatureHumidityValues[1]);
@@ -658,7 +740,6 @@ void loop() {
     return;
   }
 
-  
 
   // MQTT gets called here
   char readingsJSON[200]; // buffer for JSON
@@ -670,5 +751,4 @@ void loop() {
    soundValue);
 
   client.publish(readingsTopic, readingsJSON);
-
 }
