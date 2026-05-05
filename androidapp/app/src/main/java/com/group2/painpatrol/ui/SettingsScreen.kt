@@ -30,6 +30,10 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 valueRange = when (sensor) {
                     "temperature" -> 0f..50f
                     else -> 0f..100f
+                },
+                unit = when (sensor) {
+                    "temperature" -> "°C"
+                    else -> "%"
                 }
             )
         }
@@ -42,11 +46,12 @@ fun SensorRangeSlider(
     label: String,
     range: ClosedFloatingPointRange<Float>,
     valueRange: ClosedFloatingPointRange<Float>,
+    unit: String
 ) {
     var sliderPosition by remember { mutableStateOf(range) }
 
     Column {
-        Text(text = "$label: ${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}")
+        Text(text = "$label: ${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}$unit")
         RangeSlider(
             value = sliderPosition,
             onValueChange = { range -> sliderPosition = range },
