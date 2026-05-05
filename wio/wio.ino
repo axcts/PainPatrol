@@ -42,6 +42,7 @@ int isConnectedToWiFi;
 int isConnectedToMQTT;
 
 unsigned long globalBuzzerTime;
+unsigned long publishTime;
 
 struct SensorMeta {
   float minVal;
@@ -685,6 +686,19 @@ void displayText(char text[]) {
   tft.drawString(text, LV_HOR_RES_MAX / 4 + 9, LV_VER_RES_MAX / 2 - 10);
 }
 
+// function to calculate the average for all the readings in the buffer
+float calculateAverage(float* buffer, int count) { 
+  float sum = 0;
+  for (int i = 0; i < count; i++) {
+    if (buffer[i] != -50) {
+      sum += buffer[i];
+    }
+    else {
+      count--;
+    }
+  }
+  return sum / count;
+}
 
 void setup() {
   Serial.begin(115200); // begin terminal
@@ -740,6 +754,9 @@ void loop() {
     return;
   }
 
+  static float tempBuffer[100], humidBuffer[100], lightBuffer[100],  soundBuffer[100];
+  static int bufferIndex = 0;
+
   float temperatureHumidityValues[2] = {0};
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -748,7 +765,7 @@ void loop() {
 
 
   if (dht.readTempAndHumidity(temperatureHumidityValues)) { // if readTempAndHumidity returns 1, it's an error, don't ask me idk why they'd have it like this
-      Serial.println("Failed to get temprature and humidity value.");
+      Serial.println("Failed to get temperature and humidity value.");
       temperatureHumidityValues[0] = -50.0; // indicate failure that gets sent to mqtt, ignore -50 in avg calc
       temperatureHumidityValues[1] = -50.0 ;
   }
@@ -756,24 +773,36 @@ void loop() {
   // code for receiving sensor values above, every time a value is received, append it to a list (assuming ino can work with lists)
   // calculateAverage(); calculate avg of every array reading and save it as a float
   // then update it in the subscriber for lvgl and mqtt
-  lv_subject_set_float(&temperatureSubscriber, temperatureHumidityValues[1]);
-  lv_subject_set_float(&humiditySubscriber, temperatureHumidityValues[0]);
-  lv_subject_set_float(&soundSubscriber, soundValue);
-  lv_subject_set_float(&lightingSubscriber, lightValue);
 
-  if (isConnectedToMQTT == 0) { // clear lists here in case MQTT is off
-    return;
+  if (bufferIndex < 100) { // puts values in buffer for avg function
+    tempBuffer[bufferIndex] = temperatureHumidityValues[1];
+    humidBuffer[bufferIndex] = temperatureHumidityValues[0];
+    soundBuffer[bufferIndex] = soundValue;
+    lightBuffer[bufferIndex] = lightValue;
+    bufferIndex++;
+  } 
+  
+  if (millis() - publishTime >= 10000) { // sends readings every 10 seconds
+    publishTime = millis();
+    lv_subject_set_float(&temperatureSubscriber, calculateAverage(tempBuffer, bufferIndex)); // calculate average func calls for all readings
+    lv_subject_set_float(&humiditySubscriber, calculateAverage(humidBuffer, bufferIndex));
+    lv_subject_set_float(&soundSubscriber, calculateAverage(soundBuffer, bufferIndex));
+    lv_subject_set_float(&lightingSubscriber, calculateAverage(lightBuffer, bufferIndex));
+  
+    
+    if (isConnectedToMQTT == 1) {
+        // MQTT gets called here
+
+      char readingsJSON[200]; // buffer for JSON
+      sprintf(readingsJSON, "{\"timestamp\":%ld,\"readings\":{\"temperature\":%.2f,\"humidity\":%.2f,\"lighting\":%.2f,\"sound\":%.2f}}",
+        rtc.now().unixtime(), // unix time epoch
+        temperatureHumidityValues[1],
+        temperatureHumidityValues[0],
+        lightValue,
+        soundValue);
+
+      client.publish(readingsTopic, readingsJSON);
+    }
+    bufferIndex = 0;
   }
-
-
-  // MQTT gets called here
-  char readingsJSON[200]; // buffer for JSON
-  sprintf(readingsJSON, "{\"timestamp\":%ld,\"readings\":{\"temperature\":%.2f,\"humidity\":%.2f,\"lighting\":%.2f,\"sound\":%.2f}}",
-   rtc.now().unixtime(), // unix time epoch
-   temperatureHumidityValues[1],
-   temperatureHumidityValues[0],
-   lightValue,
-   soundValue);
-
-  client.publish(readingsTopic, readingsJSON);
 }
