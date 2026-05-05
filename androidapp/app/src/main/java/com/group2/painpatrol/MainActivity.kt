@@ -26,6 +26,7 @@ import androidx.compose.ui.res.painterResource
 import com.group2.painpatrol.data.MQTTSubscriber
 import com.group2.painpatrol.ui.HomeScreen
 import com.group2.painpatrol.ui.StatisticScreen
+import com.group2.painpatrol.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,7 +47,8 @@ enum class AppDestinations(
     val icon: Int
 ) {
     HOME("Home", R.drawable.ic_home),
-    STATS("Statistics",R.drawable.ic_stats)
+    STATS("Statistics",R.drawable.ic_stats),
+    SETTINGS("Settings", R.drawable.ic_settings)
 }
 
 
@@ -78,6 +80,7 @@ fun PainPatrolApp() {
         when (currentDestination) {
             AppDestinations.HOME -> HomeScreen(modifier = Modifier.padding(innerPadding))
             AppDestinations.STATS -> StatisticScreen(modifier = Modifier.padding(innerPadding))
+            AppDestinations.SETTINGS -> SettingsScreen(modifier = Modifier.padding(innerPadding))
         }
     }
 }
