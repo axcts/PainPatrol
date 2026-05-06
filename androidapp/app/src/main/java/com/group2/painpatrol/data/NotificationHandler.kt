@@ -33,7 +33,7 @@ private fun createNotificationChannel(context: Context) {
 
 
 // conditions is an Array of Strings with values "warm/cold, loud/quiet etc"
-fun sendNotification(context: Context, conditions: Array<String>){
+fun sendNotification(context: Context, conditions: MutableList<String>){
 
     val condition : String = conditions.joinToString { ", " }
 
