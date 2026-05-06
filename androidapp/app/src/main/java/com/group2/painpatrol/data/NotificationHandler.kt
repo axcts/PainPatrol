@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.group2.painpatrol.R
 import kotlin.random.Random
 
 // As we will only have one type of notification,
@@ -35,30 +36,21 @@ private fun createNotificationChannel(context: Context) {
 // conditions is an Array of Strings with values "warm/cold, loud/quiet etc"
 fun sendNotification(context: Context, conditions: MutableList<String>){
 
-    val condition : String = conditions.joinToString { ", " }
+    createNotificationChannel(context)
+
+    if (ActivityCompat.checkSelfPermission(
+        context, Manifest.permission.POST_NOTIFICATIONS
+    ) != PackageManager.PERMISSION_GRANTED) return
+
+    val condition : String = conditions.joinToString(", ")
 
     val notif = NotificationCompat.Builder(context, "painpatrol_discomfort_alerts")
+        .setSmallIcon(R.drawable.ic_launcher_foreground)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setContentTitle("⚠\uFE0F Your environment is not ideal!")
         .setContentText("It's too "+ condition + "!")
         .build()
 
-    with(NotificationManagerCompat.from(context)) {
-        if (ActivityCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            // TODO: Consider calling ActivityCompat#requestPermissions here
-            // to request the missing permissions, and then overriding
-            // public fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>,
-            //                                        grantResults: IntArray)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+    NotificationManagerCompat.from(context).notify(Random.nextInt(), notif)   // For now, id is random. Not optimal but it works.
 
-            return@with
-        }
-        val id = Random.nextInt()       // For now, id is random. Not optimal but it works.
-        notify(id, notif)
     }
-}
