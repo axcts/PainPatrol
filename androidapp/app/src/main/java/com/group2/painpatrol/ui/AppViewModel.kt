@@ -57,8 +57,9 @@ object AppViewModel: AndroidViewModel(application = Application()) {
         if (!discomfortMessages.isEmpty() && (unixTime - notifSendTime >= cooldownTimeMs)) {
             sendNotification(appContext,discomfortMessages)
             notifSendTime = System.currentTimeMillis()
-            discomfortMessages.clear()
+
         }
+        discomfortMessages.clear()
         updateAppState(stringifiedReadings)
 
     }
