@@ -2,7 +2,6 @@ package com.group2.painpatrol.ui
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.group2.painpatrol.data.sendNotification
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +15,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
     val uiState = uiStateFlow.asStateFlow()
 
     var notifSendTime = System.currentTimeMillis()
-    val cooldownTimeMs = 60000L
+    val cooldownTimeMs = 60000L     // 1 minute
     private lateinit var appContext : Context // lateinit allows us to not have to initialised vars
     // ie they get initialised later
     fun init(context: Context){
@@ -58,11 +57,8 @@ object AppViewModel: AndroidViewModel(application = Application()) {
         if (!discomfortMessages.isEmpty() && (unixTime - notifSendTime >= cooldownTimeMs)) {
             sendNotification(appContext,discomfortMessages)
             notifSendTime = System.currentTimeMillis()
-
             discomfortMessages.clear()
         }
-
-
         updateAppState(stringifiedReadings)
 
     }

@@ -34,10 +34,12 @@ fun sendNotification(context: Context, conditions: MutableList<String>){
 
     createNotificationChannel(context)
 
+    // continues only if push notification permissions are granted
     if (ActivityCompat.checkSelfPermission(
         context, Manifest.permission.POST_NOTIFICATIONS
     ) != PackageManager.PERMISSION_GRANTED) return
 
+    // handles prettier display in the notification content text
     val condition: String = when (conditions.size) {
         0 -> return
         1 -> conditions[0]
@@ -51,6 +53,7 @@ fun sendNotification(context: Context, conditions: MutableList<String>){
         .setContentText("It's too "+ condition + "!")
         .build()
 
-    NotificationManagerCompat.from(context).notify(Random.nextInt(), notif)   // For now, id is random. Not optimal but it works.
+    // For now, id is random. Not optimal but it works.
+    NotificationManagerCompat.from(context).notify(Random.nextInt(), notif)
 
     }
