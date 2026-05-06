@@ -15,6 +15,8 @@ object AppViewModel: AndroidViewModel(application = Application()) {
     private val uiStateFlow = MutableStateFlow(UiState())
     val uiState = uiStateFlow.asStateFlow()
 
+    var notifSendTime = System.currentTimeMillis()
+    val cooldownTimeMs = 60000L
     private lateinit var appContext : Context // lateinit allows us to not have to initialised vars
     // ie they get initialised later
     fun init(context: Context){
@@ -51,11 +53,11 @@ object AppViewModel: AndroidViewModel(application = Application()) {
             }
         }
 
+        val unixTime = System.currentTimeMillis()
 
-        if (!discomfortMessages.isEmpty()) {
-            Log.d("test", discomfortMessages.joinToString())
-
+        if (!discomfortMessages.isEmpty() && (unixTime - notifSendTime >= cooldownTimeMs)) {
             sendNotification(appContext,discomfortMessages)
+            notifSendTime = System.currentTimeMillis()
 
             discomfortMessages.clear()
         }
