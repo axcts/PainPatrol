@@ -32,8 +32,7 @@ private fun createNotificationChannel(context: Context) {
 //TODO
 // - cooldown
 
-
-// conditions is an Array of Strings with values "warm/cold, loud/quiet etc"
+// conditions is list of Strings with values "warm/cold, loud/quiet etc"
 fun sendNotification(context: Context, conditions: MutableList<String>){
 
     createNotificationChannel(context)
@@ -42,7 +41,7 @@ fun sendNotification(context: Context, conditions: MutableList<String>){
         context, Manifest.permission.POST_NOTIFICATIONS
     ) != PackageManager.PERMISSION_GRANTED) return
 
-    val condition : String = conditions.joinToString(", ")
+    val condition : String = conditions.joinToString(" and ")
 
     val notif = NotificationCompat.Builder(context, "painpatrol_discomfort_alerts")
         .setSmallIcon(R.drawable.ic_launcher_foreground)

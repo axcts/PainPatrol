@@ -2,10 +2,13 @@
 
 package com.group2.painpatrol
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -24,21 +27,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import com.group2.painpatrol.data.MQTTSubscriber
+import com.group2.painpatrol.ui.AppViewModel
 import com.group2.painpatrol.ui.HomeScreen
 import com.group2.painpatrol.ui.StatisticScreen
 import com.group2.painpatrol.ui.SettingsScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        MQTTSubscriber.connect()
         super.onCreate(savedInstanceState)
+        MQTTSubscriber.connect()
+        AppViewModel.init(this)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        }
         setContent {
             PainpatrolTheme {
                 PainPatrolApp()
             }
         }
     }
+
 }
 
 

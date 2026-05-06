@@ -1,6 +1,7 @@
 package com.group2.painpatrol.ui
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.group2.painpatrol.data.sendNotification
@@ -14,6 +15,12 @@ object AppViewModel: AndroidViewModel(application = Application()) {
     private val uiStateFlow = MutableStateFlow(UiState())
     val uiState = uiStateFlow.asStateFlow()
 
+    private lateinit var appContext : Context // lateinit allows us to not have to initialised vars
+    // ie they get initialised later
+    fun init(context: Context){
+        appContext = context.applicationContext
+    }
+
     internal fun processReadings(readings: Map<String, JsonElement>) {
         val stringifiedReadings: Map<String, String> = readings.mapValues { it.value.toString() }
 
@@ -22,32 +29,33 @@ object AppViewModel: AndroidViewModel(application = Application()) {
                 when(sensor) {
                     "temperature" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
-                            discomfortMessages.add("too cold")
-                        else discomfortMessages.add("too warm")
+                            discomfortMessages.add("cold")
+                        else discomfortMessages.add("warm")
                     }
                     "humidity" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
-                            discomfortMessages.add("too dry")
-                        else discomfortMessages.add("too humid")
+                            discomfortMessages.add("dry")
+                        else discomfortMessages.add("humid")
                     }
                     "lighting" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
-                            discomfortMessages.add("too dark")
-                        else discomfortMessages.add("too bright")
+                            discomfortMessages.add("dark")
+                        else discomfortMessages.add("bright")
                     }
                     "sound" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
-                            discomfortMessages.add("too silent")
-                        else discomfortMessages.add("too loud")
+                            discomfortMessages.add("quiet")
+                        else discomfortMessages.add("loud")
                     }
                 }
             }
         }
 
+
         if (!discomfortMessages.isEmpty()) {
             Log.d("test", discomfortMessages.joinToString())
 
-            sendNotification(getApplication<Application>().applicationContext,discomfortMessages)
+            sendNotification(appContext,discomfortMessages)
 
             discomfortMessages.clear()
         }
