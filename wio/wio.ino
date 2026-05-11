@@ -32,6 +32,7 @@ lv_subject_t lightingSubscriber;
 
 lv_obj_t *statusScreen; // page for the colour-coded message
 lv_obj_t *valuesScreen; // page for the actual values
+lv_obj_t *uncomfortableSelectionScreen; // page for the uncomfortable value selection
 
 const char * mqttHost = "broker.hivemq.com";
 const int port = 1883;
@@ -359,7 +360,6 @@ static void pageSwitch(lv_event_t *e) {
 
     } else {
       lv_group_focus_obj(current); // focus back on the button that was clicked
-
     }
   }
 }
@@ -542,6 +542,23 @@ static void loadPasswordPage(lv_event_t *e) {
 }
 
 
+static void displayUncomfortableSelectionMenu() {
+  uncomfortableSelectionScreen = lv_obj_create(NULL);
+  lv_obj_set_size(statusScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+
+  lv_obj_t *menu = lv_menu_create(uncomfortableSelectionScreen);
+
+  lv_obj_set_size(menu, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+  lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
+
+  mainPage = lv_menu_page_create(menu, NULL);
+
+  lv_menu_set_page(menu, mainPage);
+
+  lv_screen_load(uncomfortableSelectionScreen);
+}
+
+
 // just initializing the display as per lvgl docs
 void createDisplay() {
   lv_display_t *disp = lv_display_create(LV_HOR_RES_MAX, LV_VER_RES_MAX); // create display instance
@@ -597,7 +614,7 @@ void handleScreenSwitch(lv_indev_data_t *data)
 {
   lv_obj_t *current = lv_screen_active();
 
-  if (data->key == LV_KEY_RIGHT && current == statusScreen) {
+  if (data->key == LV_KEY_RIGHT && (current == statusScreen)) {
     lv_screen_load(valuesScreen); // right: values screen
   } else if (data->key == LV_KEY_LEFT && current == valuesScreen) {
     lv_screen_load(statusScreen); // left: back to status screen
@@ -652,7 +669,6 @@ void setupSwitch(lv_indev_t *wioSwitch) {
 
 // same as switch
 void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
-  data->key = NULL; 
   data->state = LV_INDEV_STATE_PRESSED; 
 
   // WHY IS EVERYTHING BACKWARDS ON THIS DEVICE I SPENT AN HOUR THINKING THERE WAS SOMETHIGN WRONG WITH MY LOGIC
@@ -662,7 +678,17 @@ void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
     // or we dont use data->key but call events instead
     data->key = LV_KEY_ENTER;
   
-  } else {
+  } 
+  else if (digitalRead(WIO_KEY_B) == LOW) {
+    if (lv_screen_active() == statusScreen || lv_screen_active() == valuesScreen) { // only allow switching to uncomfortable values if not in wifi screen and uncomfortable values screen
+      displayUncomfortableSelectionMenu();
+    }
+    
+  }
+  else if (digitalRead(WIO_KEY_A) == LOW) {
+    // mute buzzer
+  }
+  else {
     data->state = LV_INDEV_STATE_RELEASED; 
 
   }
