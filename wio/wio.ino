@@ -614,9 +614,9 @@ void handleScreenSwitch(lv_indev_data_t *data)
 {
   lv_obj_t *current = lv_screen_active();
 
-  if (data->key == LV_KEY_RIGHT && (current == statusScreen)) {
+  if (data->key == LV_KEY_RIGHT && (current == statusScreen || current == uncomfortableSelectionScreen)) {
     lv_screen_load(valuesScreen); // right: values screen
-  } else if (data->key == LV_KEY_LEFT && current == valuesScreen) {
+  } else if (data->key == LV_KEY_LEFT && (current == valuesScreen || current == uncomfortableSelectionScreen)) {
     lv_screen_load(statusScreen); // left: back to status screen
   }
 }
@@ -832,3 +832,4 @@ void loop() {
     bufferIndex = 0;
   }
 }
+
