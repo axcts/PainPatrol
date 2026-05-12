@@ -53,6 +53,16 @@ struct SensorMeta {
   const char *okMsg; // within threshold
 };
 
+// currently the only way of having reusability w/ the msgs, will rethink if there's a better way when refactoring
+const char *temperatureMsgs[] = {"Good", "Too cold", "Too hot"};
+const char *humidityMsgs[] = {"Good", "Too dry", "Too humid"};
+const char *soundMsgs[] = {"Good", "Too quiet", "Too loud"};
+const char *lightingMsgs[] = {"Good", "Too dark", "Too bright"};
+
+const char **messages[] = {temperatureMsgs, humidityMsgs, lightingMsgs, soundMsgs};
+
+const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
+
 
 int getSensorStatus(float value, float minVal, float maxVal) {
   // a simple check if the sensor's reading is below/above/within threshold
@@ -107,7 +117,6 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
     lv_obj_t *cell;
     char unit[4]; // 4 because degree symbol has interesting ascii value
 
-    const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
     lv_subject_t *subscribers[4] = {&temperatureSubscriber, &humiditySubscriber, &lightingSubscriber, &soundSubscriber};
     // we want to borrow the value from the subscribers, which is why we have the & symbol
     // if we didn't do this we'd get a copy of the temperature subscriber (which then doesn't have the callback called every time, meaning we'd just
@@ -242,13 +251,12 @@ void displayStatusGrid(lv_obj_t *parent)
   lv_obj_t *cell;
 
   static SensorMeta sensorMeta[4] = {
-      {TEMP_MIN,     TEMP_MAX,     "Too cold", "Too hot",   "Good"},
-      {HUMIDITY_MIN, HUMIDITY_MAX, "Too dry",  "Too humid", "Good"},
-      {LIGHT_MIN,    LIGHT_MAX,    "Too dark", "Too bright","Good"},
-      {SOUND_MIN,    SOUND_MAX,    "Too quiet","Too loud",  "Good"},
+      {TEMP_MIN,     TEMP_MAX,     temperatureMsgs[1], temperatureMsgs[2], temperatureMsgs[0]},
+      {HUMIDITY_MIN, HUMIDITY_MAX, humidityMsgs[1],  humidityMsgs[2], humidityMsgs[0]},
+      {LIGHT_MIN,    LIGHT_MAX,    lightingMsgs[1], lightingMsgs[2], lightingMsgs[0]},
+      {SOUND_MIN,    SOUND_MAX,    soundMsgs[1], soundMsgs[2], soundMsgs[0]},
   };
 
-  const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
   lv_subject_t *subscribers[4] = {&temperatureSubscriber, &humiditySubscriber, &lightingSubscriber, &soundSubscriber};
   // we want to borrow the value from the subscribers, which is why we have the & symbol
   // if we didn't do this we'd get a copy of the temperature subscriber (which then doesn't have the callback called every time, meaning we'd just
@@ -544,18 +552,66 @@ static void loadPasswordPage(lv_event_t *e) {
 
 static void displayUncomfortableSelectionMenu() {
   uncomfortableSelectionScreen = lv_obj_create(NULL);
-  lv_obj_set_size(statusScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
+  lv_obj_set_size(uncomfortableSelectionScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 
-  lv_obj_t *menu = lv_menu_create(uncomfortableSelectionScreen);
+  lv_screen_load(uncomfortableSelectionScreen);
+
+  lv_obj_t *menu = lv_menu_create(lv_screen_active()); // create menu
 
   lv_obj_set_size(menu, LV_HOR_RES_MAX, LV_VER_RES_MAX);
   lv_obj_set_style_bg_color(menu, lv_color_hex(0x000000), 0);
+  lv_obj_center(menu); // style menu
 
-  mainPage = lv_menu_page_create(menu, NULL);
+  mainPage = lv_menu_page_create(menu, NULL); // load page
 
-  lv_menu_set_page(menu, mainPage);
+  lv_obj_t *header = lv_label_create(mainPage);
+  lv_label_set_text(header, "Mark Uncomfortable Values");
+  lv_obj_set_style_pad_top(header, 10, 0);
+  lv_obj_set_style_pad_bottom(header, 10, 0);
+  lv_obj_set_style_text_color(header, lv_color_hex(0xFFFFFF), 0);
 
-  lv_screen_load(uncomfortableSelectionScreen);
+  lv_obj_t *container;
+  lv_obj_t *button;
+  lv_obj_t *label;
+
+  // make default button style
+  static lv_style_t buttonDefault;
+  lv_style_init(&buttonDefault);
+  lv_style_set_size(&buttonDefault, LV_HOR_RES_MAX, 30);
+  lv_style_set_shadow_width(&buttonDefault, 0); // remove shadow
+  lv_style_set_bg_opa(&buttonDefault, LV_OPA_TRANSP); // bg transparent when not focused
+  lv_style_set_radius(&buttonDefault, 0); // remove border radius
+
+  // make button style for when it is focused
+  static lv_style_t buttonFocused;
+  lv_style_init(&buttonFocused);
+  lv_style_set_size(&buttonFocused, LV_HOR_RES_MAX, 30);
+  lv_style_set_bg_opa(&buttonFocused, LV_OPA_COVER); // full opacity bg when focused
+  lv_style_set_bg_color(&buttonFocused, lv_color_hex(0x333333)); // set bg to dark grey when focused
+
+  // iterate over cellLabels, sizeof returns the length in bytes, to get the number of elements, get the size of the array and the size of a string in bytes and divide them
+  for (int i = 0; i < sizeof(cellLabels) / sizeof(char*); i++) {
+    container = lv_menu_cont_create(mainPage);
+    button = lv_button_create(container);
+    label = lv_label_create(button);
+
+    lv_obj_set_size(container, LV_HOR_RES_MAX, 30);
+
+    lv_obj_center(container);
+
+    lv_obj_set_style_pad_bottom(container, 5, 0); // add spacing between containers
+    
+    lv_label_set_text_fmt(label, "%s: %s", cellLabels[i], messages[i][0]); // i.e. temperature: good
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+
+    // add styles to corresponding states
+    lv_obj_add_style(button, &buttonDefault, LV_STATE_DEFAULT);
+    lv_obj_add_style(button, &buttonFocused, LV_STATE_FOCUS_KEY);
+  }
+
+  lv_menu_set_page(menu, mainPage); // display the page
+
+  lv_group_focus_next(mainGroup); // get the next element in the mainGroup (which would be the next/first button created here)
 }
 
 
@@ -612,7 +668,7 @@ int getAvailableWiFi(int wifiAmount, int unique[]) {
 // moving the joystick to the right takes you to the actual values
 void handleScreenSwitch(lv_indev_data_t *data)
 {
-  lv_obj_t *current = lv_screen_active();
+  lv_obj_t *current = lv_screen_active(); // could probably rework the logic of also having current == uncomfortableSelectionScreen, maybe if we'd have more menus we could just ensure that current != wifiHandler page
 
   if (data->key == LV_KEY_RIGHT && (current == statusScreen || current == uncomfortableSelectionScreen)) {
     lv_screen_load(valuesScreen); // right: values screen
@@ -676,6 +732,7 @@ void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
   if (digitalRead(WIO_KEY_C) == LOW) { // C is top left button youre welcome. if you add any of the other buttons into this handler
     // then they will all be valid presses on the back button so i think if we need the other buttons we will need to make separate handlers
     // or we dont use data->key but call events instead
+    // or we use data->key only for wio_key_c and have the other buttons serve diff purposes
     data->key = LV_KEY_ENTER;
   
   } 
@@ -832,4 +889,3 @@ void loop() {
     bufferIndex = 0;
   }
 }
-
