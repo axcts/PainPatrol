@@ -19,3 +19,5 @@
 #define BUZZER_COOLDOWN 90000 //ms, 2 mins
 #define BUZZ_TIME 400 //ms, .2s
 #define BUZZ_AMOUNT 3
+
+#define SENSOR_AMOUNT 4
