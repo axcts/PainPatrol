@@ -28,12 +28,16 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 label = sensor.replaceFirstChar { it.uppercase() },
                 range = range,
                 valueRange = when (sensor) {
-                    "temperature" -> 0f..50f
-                    else -> 0f..100f
+                    "temperature" -> 0f..50f // so that temp is not up till 100 degrees
+                    else -> 0f..100f // other values are in %
                 },
                 unit = when (sensor) {
                     "temperature" -> "°C"
                     else -> "%"
+                },
+                // save the slider position to viewmodel when user updates the range
+                onRangeChange = { newRange ->
+                    AppViewModel.updateThreshold(sensor, newRange)
                 }
             )
         }
@@ -46,7 +50,8 @@ fun SensorRangeSlider(
     label: String,
     range: ClosedFloatingPointRange<Float>,
     valueRange: ClosedFloatingPointRange<Float>,
-    unit: String
+    unit: String,
+    onRangeChange: (ClosedFloatingPointRange<Float>) -> Unit
 ) {
     var sliderPosition by remember { mutableStateOf(range) }
 
@@ -56,11 +61,14 @@ fun SensorRangeSlider(
             value = sliderPosition,
             onValueChange = { range -> sliderPosition = range },
             valueRange = valueRange,
+            onValueChangeFinished = {
+                onRangeChange(sliderPosition) // only update when user lifts their finger, not on every drag
+            },
             colors = SliderDefaults.colors(
                 thumbColor = Purple80,
                 activeTrackColor = Purple80,
                 inactiveTrackColor = Purple80.copy(alpha = 0.3f)
-        )
+            )
         )
     }
 }

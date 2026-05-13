@@ -71,4 +71,14 @@ object AppViewModel: AndroidViewModel(application = Application()) {
             )
         }
     }
+
+    // func takes what sensor to update and what the new range is & updates the
+    // thresholds map value for that sensor
+    fun updateThreshold(sensor: String, range: ClosedFloatingPointRange<Float>) {
+        uiStateFlow.update { currentState ->
+            currentState.copy(
+                thresholds = currentState.thresholds + (sensor to range)
+            )
+        }
+    }
 }
