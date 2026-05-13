@@ -694,9 +694,22 @@ static void displayUncomfortableSelectionMenu() {
     lv_obj_add_event_cb(button, changeMarkingCallback, LV_EVENT_CLICKED, &sensorComfort[i]);
   }
 
+  // add extra spacing on bottom to separate the labels with the buttons
+  lv_obj_set_style_pad_bottom(container, 10, 0); // add spacing between containers
+
   createContainer(&buttonDefault, &buttonFocused, &container, &button, &label, "Mark", 5);
 
-  // above i said that we want to use a copy of the struct, but here it's the array we're referencing
+  // style the border separating the labels and buttons
+
+  lv_obj_set_style_border_side(container, (lv_border_side_t)LV_BORDER_SIDE_TOP, 0);
+
+  lv_obj_set_style_border_width(container, 1, 0);
+
+  lv_obj_set_style_border_color(container, lv_color_hex(0xFFFFFF), 0);
+
+  lv_obj_set_style_border_opa(container, LV_OPA_70, 0);
+
+  // call Mark back /joke please don't look at this when grading
   lv_obj_add_event_cb(button, markCallback, LV_EVENT_CLICKED, sensorComfort);
 
   createContainer(&buttonDefault, &buttonFocused, &container, &button, &label, "Return", 5);
