@@ -28,8 +28,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 label = sensor.replaceFirstChar { it.uppercase() },
                 range = range,
                 valueRange = when (sensor) {
-                    "temperature" -> 0f..50f
-                    else -> 0f..100f
+                    "temperature" -> 0f..50f // so that temp is not up till 100 degrees
+                    else -> 0f..100f // other values are in %
                 },
                 unit = when (sensor) {
                     "temperature" -> "°C"
@@ -62,7 +62,7 @@ fun SensorRangeSlider(
             onValueChange = { range -> sliderPosition = range },
             valueRange = valueRange,
             onValueChangeFinished = {
-                onRangeChange(sliderPosition)
+                onRangeChange(sliderPosition) // only update when user lifts their finger, not on every drag
             },
             colors = SliderDefaults.colors(
                 thumbColor = Purple80,
