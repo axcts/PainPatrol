@@ -42,8 +42,9 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 onRangeChange = { newRange ->
                     AppViewModel.updateThreshold(sensor, newRange)
                 },
+                // actually realised that i can just reuse the update thresholds func, silly me
                 onReset = {
-                    AppViewModel.resetThreshold(sensor)
+                    AppViewModel.updateThreshold(sensor, DEFAULT_THRESHOLDS[sensor]!!)
                 }
             )
         }
