@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import com.group2.painpatrol.data.MQTTSubscriber
 
 object AppViewModel: AndroidViewModel(application = Application()) {
     private val discomfortMessages = mutableListOf<String>()
@@ -64,12 +66,31 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
     }
 
+    internal fun processBounds(bounds: Map<String, JsonElement>) {
+        bounds.forEach { (sensor, range) ->
+            val min = range.jsonObject["min"]?.toString()?.toFloat()
+            val max = range.jsonObject["max"]?.toString()?.toFloat()
+            if (min != null && max != null) {
+                updateThreshold(sensor, min..max)
+            }
+        }
+    }
+
     private fun updateAppState(payload: Map<String, String>) {
         uiStateFlow.update { currentState ->
             currentState.copy(
                 readings = payload
             )
         }
+    }
+
+    fun publishBounds() {
+        val bounds = uiState.value.thresholds
+        val json = "{\"bounds\":{" +
+            bounds.entries.joinToString(",") { (sensor, range) ->
+                "\"$sensor\":{\"min\":${range.start},\"max\":${range.endInclusive}}"
+            } + "}}"
+        MQTTSubscriber.client.publishWith().topic("painpatrol/app/bounds").payload(json.toByteArray()).send()
     }
 
     // func takes what sensor to update and what the new range is & updates the
@@ -80,5 +101,6 @@ object AppViewModel: AndroidViewModel(application = Application()) {
                 thresholds = currentState.thresholds + (sensor to range)
             )
         }
+        publishBounds()
     }
 }
