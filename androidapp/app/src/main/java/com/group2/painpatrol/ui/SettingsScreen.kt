@@ -6,7 +6,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.group2.painpatrol.ui.theme.Purple80
+import com.group2.painpatrol.ui.theme.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.Alignment
 
 
 // Settings screen where the range sliders are displayed
@@ -19,9 +22,9 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(50.dp)
     ) {
-        Text(text = "Sensor Thresholds", fontSize = 20.sp)
+        Text(text = "Sensor Thresholds", fontSize = 24.sp)
 
         uiState.thresholds.forEach { (sensor, range) ->
             SensorRangeSlider(
@@ -38,6 +41,9 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                 // save the slider position to viewmodel when user updates the range
                 onRangeChange = { newRange ->
                     AppViewModel.updateThreshold(sensor, newRange)
+                },
+                onReset = {
+                    AppViewModel.resetThreshold(sensor)
                 }
             )
         }
@@ -51,12 +57,36 @@ fun SensorRangeSlider(
     range: ClosedFloatingPointRange<Float>,
     valueRange: ClosedFloatingPointRange<Float>,
     unit: String,
-    onRangeChange: (ClosedFloatingPointRange<Float>) -> Unit
+    onRangeChange: (ClosedFloatingPointRange<Float>) -> Unit,
+    onReset: () -> Unit
 ) {
     var sliderPosition by remember { mutableStateOf(range) }
 
+    // change slider position when viewmodel resets the threshold
+    LaunchedEffect(range) {
+        sliderPosition = range
+    }
+
     Column {
-        Text(text = "$label: ${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}$unit")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "$label: ${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}$unit",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = PurpleGrey40
+            )
+            Button(
+                onClick = { onReset() },
+                colors = ButtonDefaults.buttonColors(containerColor = Purple40),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("Reset")
+            }
+        }
         RangeSlider(
             value = sliderPosition,
             onValueChange = { range -> sliderPosition = range },
