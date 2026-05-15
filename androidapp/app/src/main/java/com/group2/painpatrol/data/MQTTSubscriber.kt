@@ -47,6 +47,24 @@ internal object MQTTSubscriber {
                             }
                     }
                     .send()
+                client.subscribeWith()
+                    .topicFilter("painpatrol/wio/bounds")
+                    .callback {
+                            publish ->
+                        val boundsPayload = (publish.payloadAsBytes).toString(Charsets.UTF_8)
+                        val mappedPayload = Json.parseToJsonElement(boundsPayload)
+
+                        if (!mappedPayload.jsonObject.isEmpty()) {
+
+                            val bounds = mappedPayload.jsonObject["bounds"] ?:
+                            Json.parseToJsonElement("{}")
+
+                            if (!bounds.jsonObject.isEmpty()) {
+                                AppViewModel.processBounds(bounds.jsonObject.toMap())
+                            }
+                        }
+                    }
+                    .send()
             }
         }
 
