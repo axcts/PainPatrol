@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -26,11 +27,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     )
 
     if (showPopup) {
-        ShowMenu(
-            dismiss = { showPopup = false },
-            confirm = { showPopup = false },
-            sensorStates = sensorStates
-        )
+        ShowMenu(dismiss = { showPopup = false }, confirm = { showPopup = false }, sensorStates)
     }
 
     Column(
@@ -74,6 +71,9 @@ fun ShowMenu(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String,
         Card(
             modifier = Modifier.fillMaxWidth().padding(12.dp),
             shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFFf0f0f0),
+            )
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -88,16 +88,18 @@ fun ShowMenu(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(text = "$sensor:", textAlign = TextAlign.Start, color = Color(0x80000000))
                         Button(
                             onClick = { states[sensor] = (state + 1) % 3 },
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(4.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0x00000000),
+                                containerColor = Color(0x00FFFFFF),
                                 contentColor = Color(0x80000000)
-                            )
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 8.dp)
                         ) {
-                            Text(text = options[state], textAlign = TextAlign.End)
+                            Text(text = "> $sensor: ", textAlign = TextAlign.Start, fontSize = 16.sp)
+                            Text(modifier = Modifier.fillMaxWidth(), text = options[state], fontSize = 16.sp)
                         }
                     }
                 }
