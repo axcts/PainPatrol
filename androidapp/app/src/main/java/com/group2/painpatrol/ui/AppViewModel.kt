@@ -81,4 +81,12 @@ object AppViewModel: AndroidViewModel(application = Application()) {
             )
         }
     }
+
+    fun resetThreshold(sensor: String) {
+        uiStateFlow.update { currentState ->
+            currentState.copy(
+                thresholds = currentState.thresholds + (sensor to DEFAULT_THRESHOLDS[sensor]!!)
+            )
+        }
+    }
 }
