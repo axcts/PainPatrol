@@ -569,6 +569,13 @@ static void returnCallback(lv_event_t *event) {
 static void markCallback(lv_event_t *event) {
   lv_event_code_t code = lv_event_get_code(event);
 
+  static SensorMeta sensorMeta[4] = {
+    {TEMP_MIN,     TEMP_MAX,     temperatureMsgs[1], temperatureMsgs[2], temperatureMsgs[0]},
+    {HUMIDITY_MIN, HUMIDITY_MAX, humidityMsgs[1],  humidityMsgs[2], humidityMsgs[0]},
+    {LIGHT_MIN,    LIGHT_MAX,    lightingMsgs[1], lightingMsgs[2], lightingMsgs[0]},
+    {SOUND_MIN,    SOUND_MAX,    soundMsgs[1], soundMsgs[2], soundMsgs[0]},
+  };
+
   if (code == LV_EVENT_CLICKED) {
     SensorComfort *sensorComfort = (SensorComfort *)lv_event_get_user_data(event);
 
