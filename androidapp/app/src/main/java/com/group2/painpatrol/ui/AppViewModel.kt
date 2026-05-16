@@ -71,7 +71,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
             val min = range.jsonObject["min"]?.toString()?.toFloat()
             val max = range.jsonObject["max"]?.toString()?.toFloat()
             if (min != null && max != null) {
-                updateThreshold(sensor, min..max)
+                updateThreshold(sensor, min..max, isFromWio = true)
             }
         }
     }
@@ -95,12 +95,14 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
     // func takes what sensor to update and what the new range is & updates the
     // thresholds map value for that sensor
-    fun updateThreshold(sensor: String, range: ClosedFloatingPointRange<Float>) {
+    fun updateThreshold(sensor: String, range: ClosedFloatingPointRange<Float>, isFromWio: Boolean = false) {
         uiStateFlow.update { currentState ->
             currentState.copy(
                 thresholds = currentState.thresholds + (sensor to range)
             )
         }
-        publishBounds()
+        if (!isFromWio) {
+            publishBounds()
+        }
     }
 }
