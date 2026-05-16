@@ -5,7 +5,7 @@ package com.group2.painpatrol.ui
 val DEFAULT_THRESHOLDS = mapOf(
     "temperature" to 18f..25f,
     "humidity" to 30f..60f,
-    "light" to 10f..60f,
+    "lighting" to 10f..60f,
     "sound" to 0f..50f
 )
 data class UiState(

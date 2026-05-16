@@ -6,6 +6,7 @@
 #include "rpcWiFi.h" // wifi library
 #include "conf.h" // custom constants
 #include "Grove_Temperature_And_Humidity_Sensor.h"
+#include "ArduinoJson.h" // makes json parsing for the mqtt callback 10x easier
 
 
 DHT dht(DHT_PIN, DHT_TYPE);
@@ -37,6 +38,8 @@ lv_obj_t *uncomfortableSelectionScreen; // page for the uncomfortable value sele
 const char * mqttHost = "broker.hivemq.com";
 const int port = 1883;
 const char * readingsTopic = "painpatrol/readings"; // for publishing
+const char * wioBoundsTopic = "painpatrol/wio/bounds"; 
+const char * appBoundsTopic = "painpatrol/app/bounds";
 const char * clientId = "wio-terminal";
 
 int isConnectedToWiFi;
@@ -69,6 +72,13 @@ const char *soundMsgs[] = {"Good", "Too quiet", "Too loud"};
 const char *lightingMsgs[] = {"Good", "Too dark", "Too bright"};
 
 const char *cellLabels[] = {"Temperature", "Humidity", "Lighting", "Sound"};
+
+static SensorMeta sensorMeta[4] = {
+    {TEMP_MIN,     TEMP_MAX,     temperatureMsgs[1], temperatureMsgs[2], temperatureMsgs[0]},
+    {HUMIDITY_MIN, HUMIDITY_MAX, humidityMsgs[1],  humidityMsgs[2], humidityMsgs[0]},
+    {LIGHT_MIN,    LIGHT_MAX,    lightingMsgs[1], lightingMsgs[2], lightingMsgs[0]},
+    {SOUND_MIN,    SOUND_MAX,    soundMsgs[1], soundMsgs[2], soundMsgs[0]},
+  };
 
 
 int getSensorStatus(float value, float minVal, float maxVal) {
@@ -256,13 +266,6 @@ void displayStatusGrid(lv_obj_t *parent)
   lv_obj_t *valueLabel;
   lv_obj_t *cellLabel;
   lv_obj_t *cell;
-
-  static SensorMeta sensorMeta[4] = {
-      {TEMP_MIN,     TEMP_MAX,     temperatureMsgs[1], temperatureMsgs[2], temperatureMsgs[0]},
-      {HUMIDITY_MIN, HUMIDITY_MAX, humidityMsgs[1],  humidityMsgs[2], humidityMsgs[0]},
-      {LIGHT_MIN,    LIGHT_MAX,    lightingMsgs[1], lightingMsgs[2], lightingMsgs[0]},
-      {SOUND_MIN,    SOUND_MAX,    soundMsgs[1], soundMsgs[2], soundMsgs[0]},
-  };
 
   lv_subject_t *subscribers[4] = {&temperatureSubscriber, &humiditySubscriber, &lightingSubscriber, &soundSubscriber};
   // we want to borrow the value from the subscribers, which is why we have the & symbol
@@ -492,6 +495,9 @@ void connectToMQTT() {
     return;
   }
 
+  client.setCallback(mqttCallback); // callback for the app
+  client.subscribe(appBoundsTopic); // subscribing for wio to receive values from app
+
   Serial.println("MQTT connection established.");
   isConnectedToMQTT = 1;
 }
@@ -556,6 +562,20 @@ static void loadPasswordPage(lv_event_t *e) {
   lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x444444), LV_PART_ITEMS | LV_STATE_FOCUSED);
 }
 
+void mqttCallback(char* topic, byte* payload, unsigned int length) { // mqtt callback to parse painpatrol slider values
+  if (strcmp(topic, appBoundsTopic) == 0) {
+    JsonDocument doc;
+    deserializeJson(doc, payload, length);
+    sensorMeta[0].minVal = doc["bounds"]["temperature"]["min"];
+    sensorMeta[0].maxVal = doc["bounds"]["temperature"]["max"];
+    sensorMeta[1].minVal = doc["bounds"]["humidity"]["min"];
+    sensorMeta[1].maxVal = doc["bounds"]["humidity"]["max"];
+    sensorMeta[2].minVal = doc["bounds"]["lighting"]["min"];
+    sensorMeta[2].maxVal = doc["bounds"]["lighting"]["max"];
+    sensorMeta[3].minVal = doc["bounds"]["sound"]["min"];
+    sensorMeta[3].maxVal = doc["bounds"]["sound"]["max"];
+  }
+}
 
 static void returnCallback(lv_event_t *event) {
   lv_event_code_t code = lv_event_get_code(event);
@@ -576,17 +596,38 @@ static void markCallback(lv_event_t *event) {
 
     // since subscriber and sensorComfort are both pointers, we can't really get their size since we just get the size of the pointer, so we just use sensor_amount
     for (int i = 0; i < SENSOR_AMOUNT; i++) {
-      float subscriberValue = lv_subject_get_float(subscribers[i]);
-      Serial.println(subscriberValue); // testing to see if the values printed make sense with what is selected, will be deleted with the code for adapting the acceptable ranges
-      Serial.println(uncomfortableValues[sensorComfort[i].messagesIndex]);
+      int comfort = uncomfortableValues[sensorComfort[i].messagesIndex];
+      float currentValue = lv_subject_get_float(subscribers[i]); // sensor's value
+      float boundChange = (i == 0) ? 1.0 : 5.0; // 1.0 for temperature, 5.0 for the rest of the sensors
 
-      // also prolly have it in a func that we then call here
-      // will prolly have to transfer the MAX and MINs from conf.h to the actual ino file to be able to change them
-      // get the value from the subscriber and set it as the new lower or upper range depending on the comfort
-      // call MQTT publish with these new modifiers
+      if (comfort == -1) {
+        float lowerBound = currentValue + boundChange; // changes the lowerbound when user marks as too low
+        if (lowerBound >= sensorMeta[i].maxVal) {
+          Serial.print("Lower bound cannot exceed upper bound"); 
+        } else {
+          sensorMeta[i].minVal = lowerBound;
+        }
+      } else if ( comfort == 1) {
+        float upperBound = currentValue - boundChange; // changes the upperBound when user marks the sensor as too high
+        if (upperBound <= sensorMeta[i].minVal) {
+          Serial.print("Upper bound cannot be less than lower bound");
+        } else {
+          sensorMeta[i].maxVal = upperBound;
+        }
+      }
+    }
+    if (isConnectedToMQTT == 1) {
+      char boundsJSON[200];
+      sprintf(boundsJSON, "{\"bounds\":{\"temperature\":{\"min\":%.2f,\"max\":%.2f},\"humidity\":{\"min\":%.2f,\"max\":%.2f},\"lighting\":{\"min\":%.2f,\"max\":%.2f},\"sound\":{\"min\":%.2f,\"max\":%.2f}}}",
+        sensorMeta[0].minVal, sensorMeta[0].maxVal,
+        sensorMeta[1].minVal, sensorMeta[1].maxVal,
+        sensorMeta[2].minVal, sensorMeta[2].maxVal,
+        sensorMeta[3].minVal, sensorMeta[3].maxVal);
+
+      client.publish(wioBoundsTopic, boundsJSON); // publishes the new bounds to mqtt
     }
 
-    lv_screen_load(statusScreen); // after modifying ranges, go back to the statusScreens
+    lv_screen_load(statusScreen);
   }
 }
 
@@ -972,6 +1013,10 @@ void loop() {
     bufferIndex++;
   } 
   
+  if (isConnectedToMQTT == 1) {
+    client.loop();
+  }
+
   if (millis() - publishTime >= 10000) { // sends readings every 10 seconds
     publishTime = millis();
     lv_subject_set_float(&temperatureSubscriber, calculateAverage(tempBuffer, bufferIndex)); // calculate average func calls for all readings
