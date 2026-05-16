@@ -2,7 +2,7 @@
 
 package com.group2.painpatrol.ui
 
-import com.group2.painpatrol.ui.theme.Purple80
+import com.group2.painpatrol.ui.theme.*
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.Grid
@@ -36,7 +36,7 @@ import androidx.compose.ui.window.Dialog
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
     val uiState by AppViewModel.uiState.collectAsState()
-    var showPopup by remember { mutableStateOf(false) }
+    var popupState by remember { mutableStateOf(false) }
     val sensorStates: Map<String, List<String>> = mapOf(
         "Temperature" to listOf("Okay", "Too hot", "Too cold"),
         "Humidity" to listOf("Okay", "Too humid", "Too dry"),
@@ -44,8 +44,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         "Sound" to listOf("Okay", "Too loud", "Too quiet")
     )
 
-    if (showPopup) {
-        ShowPopup(dismiss = { showPopup = false }, confirm = { showPopup = false }, sensorStates)
+    if (popupState) {
+        Popup(dismiss = { popupState = false }, confirm = { popupState = false }, sensorStates)
     }
 
     Column(
@@ -65,12 +65,12 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         }
 
         Button(
-            onClick = { showPopup = true },
+            onClick = { popupState = true },
             modifier = Modifier.padding(16.dp).align(Alignment.Start),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Purple80,
-                contentColor = Color(0xFF000000)
+                contentColor = Black
             ),
         ) {
             Text(text = "Mark readings as uncomfortable")
@@ -79,7 +79,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ShowPopup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
+fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
     val states = remember {
         mutableStateMapOf(
             "Temperature" to 0,
@@ -91,10 +91,7 @@ fun ShowPopup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String
 
     Dialog(onDismissRequest = dismiss) {
         Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = Color(0xFFf0f0f0),
-            )
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -102,18 +99,19 @@ fun ShowPopup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String
             ) {
                 Text(modifier = Modifier.padding(bottom = 12.dp),
                      text = "Toggle uncomfortable readings:",
-                     fontWeight = FontWeight.Bold)
+                     color = Black
+                )
 
                 for ((sensor, options) in sensorStates) {
                     val state: Int = states[sensor] ?: 0
-                    var color: Color = if (state % 3 == 0) Color(0x95008b00) else Color(0x95B00020)
+                    var color: Color = if (state % 3 == 0) Green else Red
 
                     Button(
                         onClick = { states[sensor] = (state + 1) % 3 },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0x00FFFFFF),
-                            contentColor = Color(0x90000000)
+                            containerColor = Color(0x00FFFFFF), // transparent
+                            contentColor = Grey
                         ),
                         modifier = Modifier.fillMaxWidth().padding(0.dp),
                         contentPadding = PaddingValues(vertical = 8.dp)
@@ -131,7 +129,7 @@ fun ShowPopup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Purple80,
-                        contentColor = Color(0xFF000000)
+                        contentColor = Black
                     ),
                 ) {
                     Text("Confirm")
