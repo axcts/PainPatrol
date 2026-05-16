@@ -2,24 +2,42 @@
 
 package com.group2.painpatrol.ui
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.*
+import com.group2.painpatrol.ui.theme.Purple80
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalGridApi
+import androidx.compose.foundation.layout.Grid
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.window.Dialog
 
 // Home Screen with sensor data
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
     val uiState by AppViewModel.uiState.collectAsState()
     var showPopup by remember { mutableStateOf(false) }
-    val sensorStates = mapOf(
+    val sensorStates: Map<String, List<String>> = mapOf(
         "Temperature" to listOf("Okay", "Too hot", "Too cold"),
         "Humidity" to listOf("Okay", "Too humid", "Too dry"),
         "Lighting" to listOf("Okay", "Too bright", "Too dim"),
@@ -27,7 +45,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     )
 
     if (showPopup) {
-        ShowMenu(dismiss = { showPopup = false }, confirm = { showPopup = false }, sensorStates)
+        ShowPopup(dismiss = { showPopup = false }, confirm = { showPopup = false }, sensorStates)
     }
 
     Column(
@@ -49,7 +67,11 @@ fun HomeScreen(modifier: Modifier = Modifier) {
         Button(
             onClick = { showPopup = true },
             modifier = Modifier.padding(16.dp).align(Alignment.Start),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Purple80,
+                contentColor = Color(0xFF000000)
+            ),
         ) {
             Text(text = "Mark readings as uncomfortable")
         }
@@ -57,7 +79,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun ShowMenu(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
+fun ShowPopup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
     val states = remember {
         mutableStateMapOf(
             "Temperature" to 0,
@@ -69,7 +91,6 @@ fun ShowMenu(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String,
 
     Dialog(onDismissRequest = dismiss) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = Color(0xFFf0f0f0),
@@ -79,34 +100,39 @@ fun ShowMenu(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String,
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(modifier = Modifier.padding(vertical = 2.dp), text = "Toggle uncomfortable readings:")
+                Text(modifier = Modifier.padding(bottom = 12.dp),
+                     text = "Toggle uncomfortable readings:",
+                     fontWeight = FontWeight.Bold)
 
                 for ((sensor, options) in sensorStates) {
-                    val state = states[sensor] ?: 0
+                    val state: Int = states[sensor] ?: 0
+                    var color: Color = if (state % 3 == 0) Color(0x95008b00) else Color(0x95B00020)
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Button(
+                        onClick = { states[sensor] = (state + 1) % 3 },
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0x00FFFFFF),
+                            contentColor = Color(0x90000000)
+                        ),
+                        modifier = Modifier.fillMaxWidth().padding(0.dp),
+                        contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
-                        Button(
-                            onClick = { states[sensor] = (state + 1) % 3 },
-                            shape = RoundedCornerShape(4.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0x00FFFFFF),
-                                contentColor = Color(0x80000000)
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(vertical = 8.dp)
-                        ) {
-                            Text(text = "> $sensor: ", textAlign = TextAlign.Start, fontSize = 16.sp)
-                            Text(modifier = Modifier.fillMaxWidth(), text = options[state], fontSize = 16.sp)
-                        }
+                        Text(text = "> $sensor: ", textAlign = TextAlign.Start, fontSize = 16.sp)
+                        Text(modifier = Modifier.fillMaxWidth(),
+                             text = options[state],
+                             fontSize = 16.sp,
+                             color = color)
                     }
                 }
 
                 Button(
                     onClick = confirm,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Purple80,
+                        contentColor = Color(0xFF000000)
+                    ),
                 ) {
                     Text("Confirm")
                 }
