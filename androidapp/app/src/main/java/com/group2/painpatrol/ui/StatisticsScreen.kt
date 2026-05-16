@@ -4,13 +4,18 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,6 +34,8 @@ import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModelProdu
 import com.patrykandpatrick.vico.compose.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 val channels = listOf("Temperature", "Humidity", "Light", "Sound")
@@ -40,16 +47,35 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(channels[0]) }
 
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDateRangePickerState()
+
+    val startUnix = datePickerState.selectedStartDateMillis?.let { it / 1000L }
+    val endUnix = datePickerState.selectedEndDateMillis?.let { it / 1000L }
+
+    val simpleDateFormat = remember { SimpleDateFormat("dd/MM/yyyy") }  // For the display of the ranges
+
+    // to make the datepicker box display chosen range
+    val dateRangeLabel = when {
+        startUnix != null && endUnix != null ->
+            "${simpleDateFormat.format(Date(startUnix * 1000L))} – ${simpleDateFormat.format(Date(endUnix * 1000L))}"
+        startUnix != null ->
+            "${simpleDateFormat.format(Date(startUnix * 1000L))} – ?"
+        else -> "Select range"
+    }
+
     // Dummy data for now
     LaunchedEffect(Unit) {
         modelProducer.runTransaction {
             lineSeries { series(13, 8, 7, 12, 0, 1, 15, 14, 0, 11, 6, 12, 0, 11, 12, 11) }
         }
     }
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(modifier = modifier
+        .fillMaxSize()
+        .padding(16.dp)) {
         Row (modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)){
-            Box {   // Dropdown menus for sensor types
+            Box (modifier = Modifier.weight(1f)){   // Dropdown menus for sensor types
                 OutlinedTextField(
                     value = selectedChannel,
                     onValueChange = {},
@@ -66,7 +92,7 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clickable { expanded = !expanded }     // Extra Box as otherwise it would register the click on the textfield not the dropdown...?
+                        .clickable { expanded = !expanded }
                 )
                 DropdownMenu(
                     expanded = expanded,
@@ -84,7 +110,63 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 }
 
             }
+            Box (modifier = Modifier.weight(1f)) {   // Dropdown menus for date range
+                OutlinedTextField(
+                    value = dateRangeLabel,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Date Range") },
+                    trailingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Choose date range"
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clickable { showDatePicker = true }
+                )
+
+
+            }
         }
+
+        if (showDatePicker){
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDatePicker = false      // Temp, will confirm the date range to adjust the graphs
+                        }
+                    ) {
+                        Text("OK")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = {
+                        showDatePicker = false
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            ) {
+                DateRangePicker(
+                    state = datePickerState,
+                    title = {
+                        Text(
+                            text = "Select date range"
+                        )
+                    },
+                    //showModeToggle = false,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
         Box(
             modifier = modifier
                 .fillMaxSize()
