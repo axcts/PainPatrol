@@ -23,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,8 +36,8 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import java.text.SimpleDateFormat
 import java.util.Date
 
+val channels = listOf("temperature", "humidity", "lighting", "sound")
 
-val channels = listOf("Temperature", "Humidity", "Light", "Sound")
 @Preview(showSystemUi = true)
 @Composable
 fun StatisticScreen(modifier: Modifier = Modifier) {
@@ -47,27 +46,53 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(channels[0]) }
 
+    var readingHistory: Map<Long, Map<String, Float>> = emptyMap()  //= uiState.history
+
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDateRangePickerState()
 
-    val startUnix = datePickerState.selectedStartDateMillis?.let { it / 1000L }
-    val endUnix = datePickerState.selectedEndDateMillis?.let { it / 1000L }
+    // values after user confirms range
+    var startUnix by remember { mutableStateOf<Long?>(null) }
+    var endUnix   by remember { mutableStateOf<Long?>(null) }
 
-    val simpleDateFormat = remember { SimpleDateFormat("dd/MM/yyyy") }  // For the display of the ranges
+    var filteredTimestamps by remember { mutableStateOf<List<Long>>(emptyList()) }
+
+    // date formats for displaying
+    val rangeDateFormat = remember { SimpleDateFormat("dd/MM/yyyy") }
+    val axisDateFormat = remember { SimpleDateFormat("dd/MM") }
+
 
     // to make the datepicker box display chosen range
     val dateRangeLabel = when {
         startUnix != null && endUnix != null ->
-            "${simpleDateFormat.format(Date(startUnix * 1000L))} – ${simpleDateFormat.format(Date(endUnix * 1000L))}"
+            "${rangeDateFormat.format(Date(startUnix!! * 1000L))} – ${rangeDateFormat.format(Date(endUnix!! * 1000L))}"     // !! to force since it wont ever be null
         startUnix != null ->
-            "${simpleDateFormat.format(Date(startUnix * 1000L))} – ?"
+            "${rangeDateFormat.format(Date(startUnix!! * 1000L))} – ?"
         else -> "Select range"
     }
 
-    // Dummy data for now
-    LaunchedEffect(Unit) {
+    LaunchedEffect(selectedChannel, startUnix, endUnix, readingHistory) {
+
+        val filteredReadings = readingHistory
+            .entries
+            .filter { (timestamp, _) ->     // get values within range
+                val start = startUnix ?: Long.MIN_VALUE
+                val end   = endUnix   ?: Long.MAX_VALUE
+                timestamp in start..end
+            }
+            .sortedBy { (timestamp, _) -> timestamp }       // so timestamps are 100% chronological
+        
+        filteredTimestamps = filteredReadings.map { (timestamp, _) -> timestamp }  // so x-axis labels can display the dates of the readings
+
+        val values = filteredReadings.mapNotNull { (_, readings) -> readings[selectedChannel] }
+
         modelProducer.runTransaction {
-            lineSeries { series(13, 8, 7, 12, 0, 1, 15, 14, 0, 11, 6, 12, 0, 11, 12, 11) }
+            if (values.isNotEmpty()){
+                lineSeries { series(values) }
+            }
+            else {
+                lineSeries {series(listOf(0f)) } // init empty value set, so it still renders with no values available
+            }
         }
     }
     Column(modifier = modifier
@@ -100,7 +125,7 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 ) {
                     channels.forEach { channel ->
                         DropdownMenuItem(
-                            text = { Text(channel) },
+                            text = { Text(channel.replaceFirstChar { it.uppercase() }) },
                             onClick = {
                                 selectedChannel = channel
                                 expanded = false
@@ -133,18 +158,20 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
 
             }
         }
-
+        // Date picker operation
         if (showDatePicker){
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            showDatePicker = false      // Temp, will confirm the date range to adjust the graphs
+                            startUnix = datePickerState.selectedStartDateMillis?.let { it / 1000L }
+                            endUnix = datePickerState.selectedEndDateMillis?.let { it / 1000L + 86399L }
+                            // + 86399L since datepicker sets it to midnight & it would exclude readings from the chosen day [86400 is 1 day, so -1 for 23:59:59]
+                            showDatePicker = false
                         }
-                    ) {
-                        Text("OK")
-                    }
+                    ) { Text("OK") }
+
                 },
                 dismissButton = {
                     TextButton(onClick = {
@@ -178,7 +205,11 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 rememberCartesianChart(
                     rememberLineCartesianLayer(),
                     startAxis = VerticalAxis.rememberStart(),
-                    bottomAxis = HorizontalAxis.rememberBottom(),
+                    bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = { _, value, _ ->
+                        val timestamp = filteredTimestamps.getOrNull(value.toInt())
+                        if (timestamp != null) axisDateFormat.format(Date(timestamp * 1000L))
+                        else value.toInt().toString()   // otherwise vico shouts at me :-(
+                    },),
                 ),
                 modelProducer = modelProducer, modifier = Modifier.fillMaxSize()
             )
