@@ -1,6 +1,7 @@
 package com.group2.painpatrol.ui
 
 
+import android.graphics.Color.alpha
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.group2.painpatrol.ui.theme.*
+import androidx.compose.material3.MaterialTheme
 
 // Boxes with sensor readings
 //TODO Evaluate background color based on sensor value (depending on Comfort range)
@@ -27,7 +29,7 @@ fun ReadingDisplay(label: String, value: String, modifier: Modifier = Modifier) 
             modifier
                 .fillMaxSize()
                 .clip(shape = CardDefaults.shape)
-                .background(Purple80) //
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)) //
     )
     {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {

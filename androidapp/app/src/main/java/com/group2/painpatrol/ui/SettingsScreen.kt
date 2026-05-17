@@ -10,6 +10,7 @@ import com.group2.painpatrol.ui.theme.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 
 
 // Settings screen where the range sliders are displayed
@@ -35,7 +36,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     else -> 0f..100f // other values are in %
                 },
                 unit = when (sensor) {
-                    "temperature" -> "°C"
+                    "temperature" -> "Â°C"
                     else -> "%"
                 },
                 // save the slider position to viewmodel when user updates the range
@@ -78,11 +79,10 @@ fun SensorRangeSlider(
                 text = "$label: ${sliderPosition.start.toInt()} - ${sliderPosition.endInclusive.toInt()}$unit",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = PurpleGrey40
             )
             Button(
                 onClick = { onReset() },
-                colors = ButtonDefaults.buttonColors(containerColor = Purple40),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onPrimary, contentColor = Color.White),
                 shape = RoundedCornerShape(10.dp)
             ) {
                 Text("Reset")
@@ -96,9 +96,9 @@ fun SensorRangeSlider(
                 onRangeChange(sliderPosition) // only update when user lifts their finger, not on every drag
             },
             colors = SliderDefaults.colors(
-                thumbColor = Purple80,
-                activeTrackColor = Purple80,
-                inactiveTrackColor = Purple80.copy(alpha = 0.3f)
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
             )
         )
     }

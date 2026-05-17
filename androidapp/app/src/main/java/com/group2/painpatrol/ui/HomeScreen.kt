@@ -31,6 +31,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color.Companion.Green
+import androidx.compose.ui.graphics.Color.Companion.Red
 
 // Home Screen with sensor data
 @Composable
@@ -69,8 +72,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(16.dp).align(Alignment.Start),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Purple80,
-                contentColor = Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
         ) {
             Text(text = "Mark readings as uncomfortable")
@@ -99,7 +102,7 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
             ) {
                 Text(modifier = Modifier.padding(bottom = 12.dp),
                      text = "Toggle uncomfortable readings:",
-                     color = Black
+                     color = MaterialTheme.colorScheme.secondary
                 )
 
                 for ((sensor, options) in sensorStates) {
@@ -111,7 +114,7 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0x00FFFFFF), // transparent
-                            contentColor = Grey
+                            contentColor = MaterialTheme.colorScheme.secondary
                         ),
                         modifier = Modifier.fillMaxWidth().padding(0.dp),
                         contentPadding = PaddingValues(vertical = 8.dp)
@@ -128,8 +131,8 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                     onClick = confirm,
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Purple80,
-                        contentColor = Black
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                 ) {
                     Text("Confirm")
