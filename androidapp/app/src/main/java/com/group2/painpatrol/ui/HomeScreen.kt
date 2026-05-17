@@ -31,7 +31,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-
+import kotlin.collections.component1
+import kotlin.collections.component2
 // Home Screen with sensor data
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
@@ -45,11 +46,13 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     )
 
     if (popupState) {
-        Popup(dismiss = { popupState = false }, confirm = { popupState = false }, sensorStates)
+        Popup(dismiss = { popupState = false }, sensorStates)
     }
 
     Column(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Grid(config = {
@@ -66,7 +69,9 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = { popupState = true },
-            modifier = Modifier.padding(16.dp).align(Alignment.Start),
+            modifier = Modifier
+                .padding(16.dp)
+                .align(Alignment.Start),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Purple80,
@@ -79,13 +84,16 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
+fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
+    val uiState by AppViewModel.uiState.collectAsState()
+    var thresholds = uiState.thresholds
+    var readings = uiState.readings
     val states = remember {
         mutableStateMapOf(
-            "Temperature" to 0,
-            "Humidity" to 0,
-            "Lighting" to 0,
-            "Sound" to 0
+            "temperature" to 0,
+            "humidity" to 0,
+            "lighting" to 0,
+            "sound" to 0
         )
     }
 
@@ -103,17 +111,19 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                 )
 
                 for ((sensor, options) in sensorStates) {
-                    val state: Int = states[sensor] ?: 0
+                    val state: Int = states[sensor.lowercase()] ?: 0
                     var color: Color = if (state % 3 == 0) Green else Red
 
                     Button(
-                        onClick = { states[sensor] = (state + 1) % 3 },
+                        onClick = { states[sensor.lowercase()] = (state + 1) % 3 },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0x00FFFFFF), // transparent
                             contentColor = Grey
                         ),
-                        modifier = Modifier.fillMaxWidth().padding(0.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(0.dp),
                         contentPadding = PaddingValues(vertical = 8.dp)
                     ) {
                         Text(text = "> $sensor: ", textAlign = TextAlign.Start, fontSize = 16.sp)
@@ -125,8 +135,13 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                 }
 
                 Button(
-                    onClick = confirm,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    onClick = {
+                        adjustThresholds(states, thresholds, readings)
+                        dismiss()
+                              },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Purple80,
                         contentColor = Black
@@ -134,6 +149,22 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                 ) {
                     Text("Confirm")
                 }
+            }
+        }
+    }
+}
+
+fun adjustThresholds(states: Map<String, Int>, thresholds: Map<String, ClosedFloatingPointRange<Float>>, readings: Map<String, String>) {
+    thresholds.forEach { (sensor, range) ->
+        var state: Int = states[sensor] ?: 0
+
+        if (readings[sensor] !== null) {
+            if (state == 1) {
+                var newMax = readings[sensor]!!.toFloat()
+                AppViewModel.updateThreshold(sensor, range.start..newMax)
+            } else if (state == 2) {
+                var newMin = readings[sensor]!!.toFloat()
+                AppViewModel.updateThreshold(sensor, newMin..range.endInclusive)
             }
         }
     }
