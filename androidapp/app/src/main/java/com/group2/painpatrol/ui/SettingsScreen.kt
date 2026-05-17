@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val uiState by AppViewModel.uiState.collectAsState()
+    val themeMode = AppViewModel.themeMode.collectAsState()
 
     Column(
         modifier = modifier
@@ -36,7 +37,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     else -> 0f..100f // other values are in %
                 },
                 unit = when (sensor) {
-                    "temperature" -> "Â°C"
+                    "temperature" -> "°C"
                     else -> "%"
                 },
                 // save the slider position to viewmodel when user updates the range
@@ -48,6 +49,17 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
                     AppViewModel.updateThreshold(sensor, DEFAULT_THRESHOLDS[sensor]!!)
                 }
             )
+        }
+        Button(
+            onClick = { AppViewModel.updateThemeMode((themeMode.value + 1) % 3)},
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors (
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            )
+        ){
+            Text("Theme: ${when (themeMode.value) { 0 -> "System"; 1 -> "Light"; else -> "Dark"}}")
         }
     }
 }

@@ -18,9 +18,9 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
     var notifSendTime = System.currentTimeMillis()
     val cooldownTimeMs = 60000L     // 1 minute
-    private lateinit var appContext : Context // lateinit allows us to not have to initialised vars
+    private lateinit var appContext: Context // lateinit allows us to not have to initialised vars
     // ie they get initialised later
-    fun init(context: Context){
+    fun init(context: Context) {
         appContext = context.applicationContext
     }
 
@@ -29,7 +29,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
         uiState.value.thresholds.forEach { (sensor, range) ->
             if ((stringifiedReadings[sensor]?.toFloat() ?: -1.00f) !in range) {
-                when(sensor) {
+                when (sensor) {
                     "temperature" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
                             discomfortMessages.add("cold")
@@ -57,7 +57,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
         val unixTime = System.currentTimeMillis()
 
         if (!discomfortMessages.isEmpty() && (unixTime - notifSendTime >= cooldownTimeMs)) {
-            sendNotification(appContext,discomfortMessages)
+            sendNotification(appContext, discomfortMessages)
             notifSendTime = System.currentTimeMillis()
 
         }
@@ -87,15 +87,20 @@ object AppViewModel: AndroidViewModel(application = Application()) {
     fun publishBounds() {
         val bounds = uiState.value.thresholds
         val json = "{\"bounds\":{" +
-            bounds.entries.joinToString(",") { (sensor, range) ->
-                "\"$sensor\":{\"min\":${range.start},\"max\":${range.endInclusive}}"
-            } + "}}"
-        MQTTSubscriber.client.publishWith().topic("painpatrol/app/bounds").payload(json.toByteArray()).send()
+                bounds.entries.joinToString(",") { (sensor, range) ->
+                    "\"$sensor\":{\"min\":${range.start},\"max\":${range.endInclusive}}"
+                } + "}}"
+        MQTTSubscriber.client.publishWith().topic("painpatrol/app/bounds")
+            .payload(json.toByteArray()).send()
     }
 
     // func takes what sensor to update and what the new range is & updates the
     // thresholds map value for that sensor
-    fun updateThreshold(sensor: String, range: ClosedFloatingPointRange<Float>, isFromWio: Boolean = false) {
+    fun updateThreshold(
+        sensor: String,
+        range: ClosedFloatingPointRange<Float>,
+        isFromWio: Boolean = false
+    ) {
         uiStateFlow.update { currentState ->
             currentState.copy(
                 thresholds = currentState.thresholds + (sensor to range)
@@ -104,5 +109,10 @@ object AppViewModel: AndroidViewModel(application = Application()) {
         if (!isFromWio) {
             publishBounds()
         }
+    }
+    private val theme = MutableStateFlow(value = 0)
+    val themeMode = theme.asStateFlow()
+    fun updateThemeMode(mode: Int) {
+        theme.value = mode
     }
 }

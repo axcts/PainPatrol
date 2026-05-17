@@ -31,6 +31,8 @@ import com.group2.painpatrol.ui.AppViewModel
 import com.group2.painpatrol.ui.HomeScreen
 import com.group2.painpatrol.ui.StatisticScreen
 import com.group2.painpatrol.ui.SettingsScreen
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.isSystemInDarkTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,14 +66,21 @@ enum class AppDestinations(
 @Preview(showSystemUi = true)
 @Composable
 fun PainPatrolApp() {
+    val themeMode = AppViewModel.themeMode.collectAsState()
+    val darkTheme = when (themeMode.value) {
+        1 -> false
+        2 -> true
+        else -> isSystemInDarkTheme()
+    }
     var currentDestination by rememberSaveable { mutableStateOf(AppDestinations.HOME) }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            NavigationBar {
-                AppDestinations.entries.forEach {
-                    destination -> NavigationBarItem(
+    PainpatrolTheme(darkTheme = darkTheme) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            bottomBar = {
+                NavigationBar {
+                    AppDestinations.entries.forEach {
+                            destination -> NavigationBarItem(
                         selected = currentDestination == destination,
                         onClick = { currentDestination = destination },
                         icon = {
@@ -82,14 +91,15 @@ fun PainPatrolApp() {
                         },
                         label = { Text(destination.label) }
                     )
+                    }
                 }
             }
-        }
-    ) { innerPadding ->
-        when (currentDestination) {
-            AppDestinations.HOME -> HomeScreen(modifier = Modifier.padding(innerPadding))
-            AppDestinations.STATS -> StatisticScreen(modifier = Modifier.padding(innerPadding))
-            AppDestinations.SETTINGS -> SettingsScreen(modifier = Modifier.padding(innerPadding))
+        ) { innerPadding ->
+            when (currentDestination) {
+                AppDestinations.HOME -> HomeScreen(modifier = Modifier.padding(innerPadding))
+                AppDestinations.STATS -> StatisticScreen(modifier = Modifier.padding(innerPadding))
+                AppDestinations.SETTINGS -> SettingsScreen(modifier = Modifier.padding(innerPadding))
+            }
         }
     }
 }
