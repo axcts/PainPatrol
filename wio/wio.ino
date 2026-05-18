@@ -44,6 +44,7 @@ const char * clientId = "wio-terminal";
 
 int isConnectedToWiFi;
 int isConnectedToMQTT;
+int isBuzzerMuted;
 
 unsigned long globalBuzzerTime;
 unsigned long publishTime;
@@ -189,7 +190,7 @@ void display2x2Grid(lv_obj_t *parent) { // mostly follows the example for grid i
 void buzz() {
   // prevent buzzer from buzzing too frequently
 
-  if (millis() - globalBuzzerTime >= BUZZER_COOLDOWN) {
+  if ((millis() - globalBuzzerTime >= BUZZER_COOLDOWN) && !isBuzzerMuted) {
 
     for (int i = 0; i < BUZZ_AMOUNT; i++) {
       analogWrite(WIO_BUZZER, 16);
@@ -202,6 +203,15 @@ void buzz() {
     }
 
     globalBuzzerTime = millis();
+  }
+}
+
+// helper func for switching logic
+void toggleBuzzerMute() {
+  if (isBuzzerMuted) {
+    isBuzzerMuted = 0;
+  } else {
+    isBuzzerMuted = 1;
   }
 }
 
@@ -890,7 +900,7 @@ void readButton(lv_indev_t *indev, lv_indev_data_t *data) {
     
   }
   else if (digitalRead(WIO_KEY_A) == LOW) {
-    // mute buzzer
+    toggleBuzzerMute();
   }
   else {
     data->state = LV_INDEV_STATE_RELEASED; 
@@ -940,6 +950,7 @@ void setup() {
 
   isConnectedToMQTT = 0;
   isConnectedToWiFi = 0;
+  isBuzzerMuted = 0;
   lv_subject_init_float(&temperatureSubscriber, 0);
   lv_subject_init_float(&humiditySubscriber, 0);
   lv_subject_init_float(&soundSubscriber, 0);
