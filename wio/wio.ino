@@ -675,6 +675,7 @@ static void createContainer(const lv_style_t* defaultStyle, const lv_style_t* fo
 
 
 static void displayUncomfortableSelectionMenu() {
+  lv_group_remove_all_objs(mainGroup);
   uncomfortableSelectionScreen = lv_obj_create(NULL);
   lv_obj_set_size(uncomfortableSelectionScreen, LV_HOR_RES_MAX, LV_VER_RES_MAX);
 
@@ -758,8 +759,6 @@ static void displayUncomfortableSelectionMenu() {
   lv_obj_add_event_cb(button, returnCallback, LV_EVENT_CLICKED, NULL);
 
   lv_menu_set_page(menu, mainPage); // display the page
-
-  lv_group_focus_next(mainGroup); // get the next element in the mainGroup (which would be the next/first button created here)
 }
 
 
