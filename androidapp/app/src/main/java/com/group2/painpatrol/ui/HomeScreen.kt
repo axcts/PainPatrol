@@ -34,6 +34,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.graphics.Color.Companion.Red
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.math.ceil
+import kotlin.math.floor
 
 // Home Screen with sensor data
 @Composable
@@ -163,10 +167,10 @@ fun adjustThresholds(states: Map<String, Int>, thresholds: Map<String, ClosedFlo
             // only change ranges if the value thats being read is actually in the range
             if (range.start <= read && read <= range.endInclusive) {
                 if (state == 1) {
-                    AppViewModel.updateThreshold(sensor, range.start..read)
+                    AppViewModel.updateThreshold(sensor, range.start..floor(read))
 
                 } else if (state == 2) {
-                    AppViewModel.updateThreshold(sensor, read..range.endInclusive)
+                    AppViewModel.updateThreshold(sensor, ceil(read)..range.endInclusive)
                 }
             }
         }
