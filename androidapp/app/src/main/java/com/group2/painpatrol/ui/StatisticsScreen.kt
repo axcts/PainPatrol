@@ -216,7 +216,6 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 rememberCartesianChart(
                     rememberLineCartesianLayer(rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = yMax)),
                     startAxis = VerticalAxis.rememberStart(),
-                    getXStep = {50.0},
                     bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = { _, value, _ ->
                         val timestamp = filteredTimestamps.getOrNull(value.toInt())
                         if (timestamp != null) axisDateFormat.format(Date(timestamp * 1000L))
