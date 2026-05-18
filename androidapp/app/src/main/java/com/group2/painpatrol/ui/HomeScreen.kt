@@ -31,8 +31,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import kotlin.collections.component1
-import kotlin.collections.component2
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color.Companion.Green
+import androidx.compose.ui.graphics.Color.Companion.Red
+
 // Home Screen with sensor data
 @Composable
 fun HomeScreen(modifier: Modifier = Modifier) {
@@ -70,8 +72,8 @@ fun HomeScreen(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(16.dp).align(Alignment.Start),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Purple80,
-                contentColor = Black
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
         ) {
             Text(text = "Mark readings as uncomfortable")
@@ -103,14 +105,14 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
             ) {
                 Text(modifier = Modifier.padding(bottom = 12.dp),
                      text = "Toggle uncomfortable readings:",
-                     color = Black
+                     color = MaterialTheme.colorScheme.secondary
                 )
 
                 // for every sensor create a button in the popup with the sensor name and state
                 // (the state that is currently in the states map not the actual state of the sensor that is displayed)
                 for ((sensor, options) in sensorStates) {
-                    val state = states[sensor.lowercase()] ?: 0
-                    var color: Color = if (state == 0) Green else Red
+                    val state: Int = states[sensor] ?: 0
+                    var color: Color = if (state % 3 == 0) Green10 else Red10
 
                     Button(
                         // on click increase the int in states by 1 then modulo 3 so it stays either 0 1 or 3
@@ -120,7 +122,7 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0x00FFFFFF), // transparent
-                            contentColor = Grey
+                            contentColor = MaterialTheme.colorScheme.secondary
                         ),
                         modifier = Modifier.fillMaxWidth().padding(0.dp),
                         contentPadding = PaddingValues(vertical = 8.dp)
@@ -140,8 +142,8 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
                               },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Purple80,
-                        contentColor = Black
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
                 ) {
                     Text("Confirm")

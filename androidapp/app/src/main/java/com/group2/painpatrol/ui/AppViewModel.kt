@@ -76,7 +76,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
         uiState.value.thresholds.forEach { (sensor, range) ->
             if ((stringifiedReadings[sensor]?.toFloat() ?: -1.00f) !in range) {
-                when(sensor) {
+                when (sensor) {
                     "temperature" -> {
                         if (stringifiedReadings[sensor]?.toFloat() ?: -1.00f < range.start)
                             discomfortMessages.add("cold")
@@ -108,7 +108,7 @@ object AppViewModel: AndroidViewModel(application = Application()) {
         val unixTime = System.currentTimeMillis()
 
         if (!discomfortMessages.isEmpty() && (unixTime - notifSendTime >= cooldownTimeMs)) {
-            sendNotification(appContext,discomfortMessages)
+            sendNotification(appContext, discomfortMessages)
             notifSendTime = System.currentTimeMillis()
 
         }
@@ -146,7 +146,11 @@ object AppViewModel: AndroidViewModel(application = Application()) {
 
     // func takes what sensor to update and what the new range is & updates the
     // thresholds map value for that sensor
-    fun updateThreshold(sensor: String, range: ClosedFloatingPointRange<Float>, isFromWio: Boolean = false) {
+    fun updateThreshold(
+        sensor: String,
+        range: ClosedFloatingPointRange<Float>,
+        isFromWio: Boolean = false
+    ) {
         uiStateFlow.update { currentState ->
             currentState.copy(
                 thresholds = currentState.thresholds + (sensor to range)
@@ -161,6 +165,9 @@ object AppViewModel: AndroidViewModel(application = Application()) {
             publishBounds()
         }
     }
-
-
+    private val theme = MutableStateFlow(value = 0)
+    val themeMode = theme.asStateFlow()
+    fun updateThemeMode(mode: Int) {
+        theme.value = mode
+    }
 }
