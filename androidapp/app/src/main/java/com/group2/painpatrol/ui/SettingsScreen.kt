@@ -11,7 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
-
+import kotlin.math.ceil
+import kotlin.math.floor
 
 // Settings screen where the range sliders are displayed
 // uses a Column and loops over the map with thresholds to create one SensorRangeSlider per sensor
@@ -102,7 +103,11 @@ fun SensorRangeSlider(
         }
         RangeSlider(
             value = sliderPosition,
-            onValueChange = { range -> sliderPosition = range },
+            onValueChange = { range ->
+                var min: Float = round(range.start)
+                var max: Float = round(range.endInclusive)
+                sliderPosition = min..max
+                            },
             valueRange = valueRange,
             onValueChangeFinished = {
                 onRangeChange(sliderPosition) // only update when user lifts their finger, not on every drag
@@ -114,4 +119,17 @@ fun SensorRangeSlider(
             )
         )
     }
+}
+
+fun round(value: Float): Float {
+    var newVal = value
+
+    if (value * 10 % 10 >= 5) {
+        newVal = ceil(value)
+
+    } else {
+        newVal = floor(value)
+    }
+
+    return newVal
 }
