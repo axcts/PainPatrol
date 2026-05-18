@@ -28,23 +28,13 @@ internal object MQTTSubscriber {
                 client.subscribeWith()
                     .topicFilter("painpatrol/readings")
                     .callback {
-                        publish ->
-                            payload = (publish.payloadAsBytes).toString(Charsets.UTF_8)
-                            val mappedPayload = Json.parseToJsonElement(payload ?: "{}")
+                            publish ->
+                        payload = (publish.payloadAsBytes).toString(Charsets.UTF_8)
+                        val mappedPayload = Json.parseToJsonElement(payload ?: "{}")
 
-                            if ( !mappedPayload.jsonObject.isEmpty() ) {
-
-                                val readings = mappedPayload.jsonObject["readings"] ?:
-                                    Json.parseToJsonElement("{}")
-
-                                if ( !readings.jsonObject.isEmpty()) {
-                                    AppViewModel.processReadings(readings
-                                                                            .jsonObject.toMap())
-
-                                    // TODO: possibly save payload json to local storage
-                                    // saving would be delegated to a diff class
-                                }
-                            }
+                        if ( !mappedPayload.jsonObject.isEmpty() ) {
+                            AppViewModel.processReadings(mappedPayload.jsonObject.toMap())
+                        }
                     }
                     .send()
                 client.subscribeWith()

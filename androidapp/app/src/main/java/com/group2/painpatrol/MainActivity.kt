@@ -3,12 +3,12 @@
 package com.group2.painpatrol
 
 import android.Manifest
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.ExperimentalGridApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -26,7 +26,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
+import androidx.datastore.core.DataStore
+import androidx.datastore.dataStore
 import com.group2.painpatrol.data.MQTTSubscriber
+import com.group2.painpatrol.data.Settings
+import com.group2.painpatrol.data.SettingsRepository
+import com.group2.painpatrol.data.SettingsSerializer
 import com.group2.painpatrol.ui.AppViewModel
 import com.group2.painpatrol.ui.HomeScreen
 import com.group2.painpatrol.ui.StatisticScreen
@@ -34,11 +39,16 @@ import com.group2.painpatrol.ui.SettingsScreen
 import androidx.compose.runtime.collectAsState
 import androidx.compose.foundation.isSystemInDarkTheme
 
+val Context.dataStore: DataStore<Settings> by dataStore(
+    fileName = "settings.json",
+    serializer = SettingsSerializer,
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MQTTSubscriber.connect()
-        AppViewModel.init(this)
+        AppViewModel.init(this, SettingsRepository(this.dataStore))
         enableEdgeToEdge()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)

@@ -40,7 +40,7 @@ import androidx.compose.ui.graphics.Color.Companion.Red
 fun HomeScreen(modifier: Modifier = Modifier) {
     val uiState by AppViewModel.uiState.collectAsState()
     var popupState by remember { mutableStateOf(false) }
-    val sensorStates: Map<String, List<String>> = mapOf(
+    val sensorStates = mapOf(
         "Temperature" to listOf("Okay", "Too hot", "Too cold"),
         "Humidity" to listOf("Okay", "Too humid", "Too dry"),
         "Lighting" to listOf("Okay", "Too bright", "Too dim"),
@@ -48,7 +48,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
     )
 
     if (popupState) {
-        Popup(dismiss = { popupState = false }, confirm = { popupState = false }, sensorStates)
+        Popup(dismiss = { popupState = false }, sensorStates)
     }
 
     Column(
@@ -82,20 +82,23 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, List<String>>) {
+fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
+    val uiState by AppViewModel.uiState.collectAsState()
+    var thresholds: Map<String, ClosedFloatingPointRange<Float>> = uiState.thresholds
+    var readings: Map<String, String> = uiState.readings
+    // parallel of sensorStates - this one stores sensor and an integer that is either 0, 1, 2
+    // to represent the ["okay", "too hot", "too cold"] from the list in sensorStates. sorry not very modular
     val states = remember {
         mutableStateMapOf(
-            "Temperature" to 0,
-            "Humidity" to 0,
-            "Lighting" to 0,
-            "Sound" to 0
+            "temperature" to 0,
+            "humidity" to 0,
+            "lighting" to 0,
+            "sound" to 0
         )
     }
 
     Dialog(onDismissRequest = dismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp)
-        ) {
+        Card(shape = RoundedCornerShape(16.dp)) {
             Column(
                 modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -105,12 +108,17 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                      color = MaterialTheme.colorScheme.secondary
                 )
 
+                // for every sensor create a button in the popup with the sensor name and state
+                // (the state that is currently in the states map not the actual state of the sensor that is displayed)
                 for ((sensor, options) in sensorStates) {
                     val state: Int = states[sensor] ?: 0
                     var color: Color = if (state % 3 == 0) Green10 else Red10
 
                     Button(
-                        onClick = { states[sensor] = (state + 1) % 3 },
+                        // on click increase the int in states by 1 then modulo 3 so it stays either 0 1 or 3
+                        // since states is mutableStateOfMap it recompiles all composables that access it when the value of it changes
+                        // so that makes the button rotate the okay -> too [smth] -> too [smth] values
+                        onClick = { states[sensor.lowercase()] = (state + 1) % 3 },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0x00FFFFFF), // transparent
@@ -128,7 +136,10 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                 }
 
                 Button(
-                    onClick = confirm,
+                    onClick = {
+                        adjustThresholds(states, thresholds, readings) // on click first adjust thresholds
+                        dismiss() // then collapse the popup
+                              },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -136,6 +147,26 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
                     ),
                 ) {
                     Text("Confirm")
+                }
+            }
+        }
+    }
+}
+
+fun adjustThresholds(states: Map<String, Int>, thresholds: Map<String, ClosedFloatingPointRange<Float>>, readings: Map<String, String>) {
+    for ((sensor, range) in thresholds) {
+        var state: Int = states[sensor] ?: 0
+
+        if (readings[sensor] !== null) {
+            var read: Float = readings[sensor]!!.toFloat()
+
+            // only change ranges if the value thats being read is actually in the range
+            if (range.start <= read && read <= range.endInclusive) {
+                if (state == 1) {
+                    AppViewModel.updateThreshold(sensor, range.start..read)
+
+                } else if (state == 2) {
+                    AppViewModel.updateThreshold(sensor, read..range.endInclusive)
                 }
             }
         }
