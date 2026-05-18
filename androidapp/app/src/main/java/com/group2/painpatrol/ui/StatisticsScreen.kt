@@ -38,16 +38,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.TimeZone
 
-val dummyReadingHistory: Map<Long, Map<String, Float>> = mapOf(
-    1779099925L to mapOf("temperature" to 38.48f, "humidity" to 62.63f, "lighting" to 31.62f, "sound" to 85.45f),
-    1779099968L to mapOf("temperature" to 80.72f, "humidity" to 2.92f,  "lighting" to 3.52f,  "sound" to 4.31f),
-    1779099973L to mapOf("temperature" to 69.9f,  "humidity" to 37.34f, "lighting" to 88.76f, "sound" to 35.71f),
-    1779099978L to mapOf("temperature" to 99.48f, "humidity" to 90.21f, "lighting" to 70.45f, "sound" to 85.71f),
-    1779109669L to mapOf("temperature" to 30.74f, "humidity" to 32.11f, "lighting" to 43.32f, "sound" to 82.31f),
-    1779116738L to mapOf("temperature" to 25.1f,  "humidity" to 37.0f,  "lighting" to 3.6f,   "sound" to 19.7f),
-    1779116751L to mapOf("temperature" to 25.2f,  "humidity" to 34.0f,  "lighting" to 3.1f,   "sound" to 22.1f),
-    1779116759L to mapOf("temperature" to 25.2f,  "humidity" to 33.0f,  "lighting" to 3.0f,   "sound" to 23.3f),
-)
 val channels = listOf("temperature", "humidity", "lighting", "sound")
 
 @Preview(showSystemUi = true)
@@ -58,7 +48,7 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(channels[0]) }
 
-    var readingHistory: Map<Long, Map<String, Float>> = dummyReadingHistory//AppViewModel.loadReadings()
+    var readingHistory: Map<Long, Map<String, Float>> = AppViewModel.loadReadings()
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDateRangePickerState()
