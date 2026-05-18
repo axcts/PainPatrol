@@ -29,12 +29,12 @@ fun ReadingDisplay(label: String, value: String, modifier: Modifier = Modifier) 
             modifier
                 .fillMaxSize()
                 .clip(shape = CardDefaults.shape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)) //
+                .background(MaterialTheme.colorScheme.primary)
     )
     {
         Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text = label, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
-            Text(text = value, fontSize = 20.sp, modifier = Modifier.padding(8.dp))
+            Text(text = label, fontSize = 20.sp, modifier = Modifier.padding(8.dp), color = MaterialTheme.colorScheme.onPrimary)
+            Text(text = value, fontSize = 20.sp, modifier = Modifier.padding(8.dp), color = MaterialTheme.colorScheme.onPrimary)
 
 
 

@@ -107,7 +107,7 @@ fun Popup(dismiss: () -> Unit, confirm: () -> Unit, sensorStates: Map<String, Li
 
                 for ((sensor, options) in sensorStates) {
                     val state: Int = states[sensor] ?: 0
-                    var color: Color = if (state % 3 == 0) Green else Red
+                    var color: Color = if (state % 3 == 0) Green10 else Red10
 
                     Button(
                         onClick = { states[sensor] = (state + 1) % 3 },
