@@ -38,7 +38,7 @@ import kotlin.collections.component2
 fun HomeScreen(modifier: Modifier = Modifier) {
     val uiState by AppViewModel.uiState.collectAsState()
     var popupState by remember { mutableStateOf(false) }
-    val sensorStates: Map<String, List<String>> = mapOf(
+    val sensorStates = mapOf(
         "Temperature" to listOf("Okay", "Too hot", "Too cold"),
         "Humidity" to listOf("Okay", "Too humid", "Too dry"),
         "Lighting" to listOf("Okay", "Too bright", "Too dim"),
@@ -86,7 +86,7 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
     var readings: Map<String, String> = uiState.readings
     // parallel of sensorStates - this one stores sensor and an integer that is either 0, 1, 2
     // to represent the ["okay", "too hot", "too cold"] from the list in sensorStates. sorry not very modular
-    val states: Map<String, Int> = remember {
+    val states = remember {
         mutableStateMapOf(
             "temperature" to 0,
             "humidity" to 0,
@@ -109,7 +109,7 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
                 // for every sensor create a button in the popup with the sensor name and state
                 // (the state that is currently in the states map not the actual state of the sensor that is displayed)
                 for ((sensor, options) in sensorStates) {
-                    val state: Int = states[sensor.lowercase()] ?: 0
+                    val state = states[sensor.lowercase()] ?: 0
                     var color: Color = if (state == 0) Green else Red
 
                     Button(
