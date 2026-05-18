@@ -46,7 +46,7 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChannel by remember { mutableStateOf(channels[0]) }
 
-    var readingHistory: Map<Long, Map<String, Float>> = emptyMap()  //= uiState.history
+    var readingHistory: Map<Long, Map<String, Float>> = AppViewModel.loadReadings()
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDateRangePickerState()
