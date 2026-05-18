@@ -111,7 +111,7 @@ fun Popup(dismiss: () -> Unit, sensorStates: Map<String, List<String>>) {
                 // for every sensor create a button in the popup with the sensor name and state
                 // (the state that is currently in the states map not the actual state of the sensor that is displayed)
                 for ((sensor, options) in sensorStates) {
-                    val state: Int = states[sensor] ?: 0
+                    val state: Int = states[sensor.lowercase()] ?: 0
                     var color: Color = if (state % 3 == 0) Green10 else Red10
 
                     Button(
