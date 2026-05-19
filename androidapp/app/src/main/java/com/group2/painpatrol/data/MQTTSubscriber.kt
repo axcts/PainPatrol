@@ -6,7 +6,7 @@ import com.hivemq.client.mqtt.MqttClient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 
-internal object MQTTSubscriber {
+internal object  MQTTSubscriber {
     private val identifier: String = "pain-patrol"
     private val serverHost: String = "broker.hivemq.com"
     private val serverPort: Int = 1883
