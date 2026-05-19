@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
@@ -45,9 +46,11 @@ fun sendNotification(context: Context, conditions: MutableList<String>){
         1 -> conditions[0]
         else -> conditions.dropLast(1).joinToString(", ") + " and " + conditions.last()
     }
+    val bitmap = BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher)
 
     val notif = NotificationCompat.Builder(context, "painpatrol_discomfort_alerts")
         .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setLargeIcon(bitmap)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setContentTitle("⚠\uFE0F Your environment is not ideal!")
         .setContentText("It's too "+ condition + "!")
