@@ -48,7 +48,7 @@ A system for chronic migraine sufferers which tracks light, sound, temperature, 
 
 ## System Architecture
 
-![Architecture Diagram.drawio.png](uploads/f1cfbd61a35ff1fc966c369338626d10/Architecture_Diagram.drawio.png){width=730 height=600}
+![Architecture Diagram.drawio.png](repoassets/Architecture_Diagram.drawio.png){width=730 height=600}
 
 ## System Description
 ### Wio Terminal
@@ -57,3 +57,38 @@ The Wio Terminal measures sound intensity, lighting intensity, and the temperatu
 The Wio Terminal also receives user defined uncomfortable ranges for individual sensors from the Android Application through an MQTT broker.
 
 Should the measurements exceed the ranges, the Wio Terminal will emit a noise through the built-in buzzer to alert the user about their environment not being suitable for them.
+#### Hardware Specification
+- [Wio Terminal](https://wiki.seeedstudio.com/Wio_Terminal_Intro/)
+- [Grove - Temperature and Humidity Sensor](https://wiki.seeedstudio.com/Grove-TemperatureAndHumidity_Sensor/)
+- [Grove - Sound Sensor](https://wiki.seeedstudio.com/Grove-Sound_Sensor/)
+- [Grove - Light Sensor](https://wiki.seeedstudio.com/Grove-Light_Sensor/)
+- [Wio Terminal Chassis Battery](https://wiki.seeedstudio.com/Wio-Terminal-Chassis-Battery_650mAh/)
+
+### Android Application
+The Android Application displays statistics of every sensor's readings on a chart. It also provides live readings of the sensor values.
+
+The user is also notified about an unsuitable environment through a push notification.
+
+Should the user feel like changing their acceptable ranges for the sensor's values, they can either do so in the settings section of the app or by marking the sensors manually in the live readings section.
+
+### Software Specification
+- Android application
+    - built using Gradle
+    - developed with the Java JDK v25 in Android Studio
+- Wio Terminal application
+    - developed and compiled using Arduino IDE
+- Version control done through Git
+- Repository hosting, management of the project done through GitLab
+
+## Project Members
+All members took part in designing the system and in planning out basic and advanced features of the system.
+### Adam Sindler
+Contributed to both Wio and Android, MQTT, CI pipeline and storing data via local storage.
+### Aleks Przygoda
+Primarily contributed to Android, utilised chart library for graphs, displaying of values in Android, creating notification functionality and the app logo.
+### André Ingemarsson
+Contributed to both Wio and Android, MQTT, range adaptation, color scheme and Wi-Fi connection.
+### Bela Zemanova
+Contributed to both Wio and Android, Wi-Fi list and selection, uncomfortable value marking and logic in the Android App.
+### Katarzyna Swiatowska
+Contributed to both Wio and Android, Wi-Fi list and selection, slider settings for acceptable ranges, default acceptable ranges, and displaying colour-coded indicators for sensors.
