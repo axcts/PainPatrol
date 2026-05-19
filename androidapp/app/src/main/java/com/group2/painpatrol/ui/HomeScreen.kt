@@ -73,7 +73,7 @@ fun HomeScreen(modifier: Modifier = Modifier) {
 
         Button(
             onClick = { popupState = true },
-            modifier = Modifier.padding(16.dp).align(Alignment.Start),
+            modifier = Modifier.padding(16.dp).align(Alignment.CenterHorizontally),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
