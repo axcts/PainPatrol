@@ -48,7 +48,7 @@ fun sendNotification(context: Context, conditions: MutableList<String>){
     }
 
     val notif = NotificationCompat.Builder(context, "painpatrol_discomfort_alerts")
-        .setSmallIcon(R.drawable.ic_launcher_foreground)
+        .setSmallIcon(R.drawable.ic_notif)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT)
         .setContentTitle("⚠\uFE0F Your environment is not ideal!")
         .setContentText("It's too "+ condition + "!")
