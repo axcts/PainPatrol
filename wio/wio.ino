@@ -1040,11 +1040,11 @@ void loop() {
 
       char readingsJSON[200]; // buffer for JSON
       sprintf(readingsJSON, "{\"timestamp\":%ld,\"readings\":{\"temperature\":%.2f,\"humidity\":%.2f,\"lighting\":%.2f,\"sound\":%.2f}}",
-        rtc.now().unixtime(), // unix time epoch
-        temperatureHumidityValues[1],
-        temperatureHumidityValues[0],
-        lightValue,
-        soundValue);
+              rtc.now().unixtime(), // unix time epoch
+              calculateAverage(tempBuffer, bufferIndex),
+              calculateAverage(humidBuffer, bufferIndex),
+              calculateAverage(lightBuffer, bufferIndex),
+              calculateAverage(soundBuffer, bufferIndex));
 
       client.publish(readingsTopic, readingsJSON);
     }
