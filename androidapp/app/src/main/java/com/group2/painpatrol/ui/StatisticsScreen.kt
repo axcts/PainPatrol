@@ -201,12 +201,13 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(10.dp, 50.dp),
         ) {
+            val label = rememberAxisLabelComponent(style = TextStyle(color = MaterialTheme.colorScheme.onSurface))
             val yMax = if (selectedChannel == "temperature") 50.0 else 100.0
             CartesianChartHost(
                 rememberCartesianChart(
                     rememberLineCartesianLayer(rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = yMax)),
-                    startAxis = VerticalAxis.rememberStart(),
-                    bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = { _, value, _ ->
+                    startAxis = VerticalAxis.rememberStart(label = label),
+                    bottomAxis = HorizontalAxis.rememberBottom(label = label, valueFormatter = { _, value, _ ->
                         val timestamp = filteredTimestamps.getOrNull(value.toInt())
                         if (timestamp != null) axisDateFormat.format(Date(timestamp * 1000L))
                         else value.toInt().toString()   // otherwise vico shouts at me :-(
