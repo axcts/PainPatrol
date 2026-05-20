@@ -26,6 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.text.TextStyle
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
@@ -201,12 +204,13 @@ fun StatisticScreen(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(10.dp, 50.dp),
         ) {
+            val label = rememberAxisLabelComponent(style = TextStyle(color = MaterialTheme.colorScheme.onSurface))
             val yMax = if (selectedChannel == "temperature") 50.0 else 100.0
             CartesianChartHost(
                 rememberCartesianChart(
                     rememberLineCartesianLayer(rangeProvider = CartesianLayerRangeProvider.fixed(minY = 0.0, maxY = yMax)),
-                    startAxis = VerticalAxis.rememberStart(),
-                    bottomAxis = HorizontalAxis.rememberBottom(valueFormatter = { _, value, _ ->
+                    startAxis = VerticalAxis.rememberStart(label = label),
+                    bottomAxis = HorizontalAxis.rememberBottom(label = label, valueFormatter = { _, value, _ ->
                         val timestamp = filteredTimestamps.getOrNull(value.toInt())
                         if (timestamp != null) axisDateFormat.format(Date(timestamp * 1000L))
                         else value.toInt().toString()   // otherwise vico shouts at me :-(
