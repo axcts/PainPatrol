@@ -1,7 +1,8 @@
 # Pain Patrol
 ## Overview
 A system for chronic migraine sufferers which tracks light, sound, temperature, and humidity conditions and provides an evaluation of these conditions to aid the user in avoiding migraine triggers. The system allows customisation of comfortable environmental value ranges, and alerts the user when the readings are outside of the comfortable range. The mobile application allows the user to view graphs of environmental readings from a customisable timeframe.
-### Demo (link goes here)
+### Demo
+In order to see how the application is used, view our [video](https://youtu.be/-NR6YS6pn7E)
 
 ## Getting Started
 ### Prerequisites
@@ -91,4 +92,4 @@ Contributed to both Wio and Android, MQTT, range adaptation, color scheme and Wi
 ### Bela Zemanova
 Contributed to both Wio and Android, Wi-Fi list and selection, uncomfortable value marking and logic in the Android App.
 ### Katarzyna Swiatowska
-Contributed to both Wio and Android, Wi-Fi list and selection, slider settings for acceptable ranges, default acceptable ranges, and displaying colour-coded indicators for sensors.
+Contributed to both Wio and Android, Wi-Fi list and selection, slider settings for acceptable ranges, default acceptable ranges, and displaying colour-coded indicators for sensors. Responsible for the video.
