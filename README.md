@@ -49,7 +49,7 @@ In order to see how the application is used, view our [video](https://youtu.be/-
 
 ## System Architecture
 
-![Architecture Diagram.drawio.png](repoassets/Architecture_Diagram.drawio.png){width=730 height=600}
+![Architecture Diagram.drawio.png](repoassets/Architecture_Diagram.drawio.png)
 
 ## System Description
 ### Wio Terminal
@@ -81,15 +81,6 @@ Should the user feel like changing their acceptable ranges for the sensor's valu
 - Version control done through Git
 - Repository hosting, management of the project done through GitLab
 
-## Project Members
-All members took part in designing the system and in planning out basic and advanced features of the system.
-### Adam Sindler
-Contributed to both Wio and Android, MQTT, CI pipeline and storing data via local storage.
-### Aleks Przygoda
-Primarily contributed to Android, utilised chart library for graphs, displaying of values in Android, creating notification functionality and the app logo.
-### André Ingemarsson
-Contributed to both Wio and Android, MQTT, range adaptation, color scheme and Wi-Fi connection.
-### Bela Zemanova
-Contributed to both Wio and Android, Wi-Fi list and selection, uncomfortable value marking and logic in the Android App.
-### Katarzyna Swiatowska
-Contributed to both Wio and Android, Wi-Fi list and selection, slider settings for acceptable ranges, default acceptable ranges, and displaying colour-coded indicators for sensors. Responsible for the video.
+## Contributors
+
+[Streetzy](https://github.com/streetzy), [Belina](https://github.com/beIina), [Aleks](https://github.com/axcts), [Kasia](https://github.com/katswiatowska), [Andros](https://github.com/Andros18)
